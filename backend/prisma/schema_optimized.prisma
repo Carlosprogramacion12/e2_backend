@@ -1,0 +1,208 @@
+// schema.prisma - Modelo Optimizado
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- CORE: USUARIOS ---
+
+enum UserRole {
+  ADMIN
+  JUEZ
+  PARTICIPANTE
+}
+
+model users {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name              String    @db.VarChar(255)
+  email             String    @unique @db.VarChar(255)
+  password          String    @db.VarChar(255)
+  role              UserRole  @default(PARTICIPANTE)
+  
+  // Extensiones de Participante (Consolidadas)
+  no_control        String?   @db.VarChar(255)
+  telefono          String?   @db.VarChar(255)
+  carrera           String?   @db.VarChar(255)
+  
+  avatar            String?   @db.VarChar(255)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  
+  // Relaciones
+  miembro_equipos   equipo_miembros[]
+  interacciones     equipo_interacciones[]
+  evento_jueceado   evento_jueces[]
+  evaluaciones_hechas evaluaciones[]
+  preferencias      user_preferences?
+  certificados      certificados[]
+}
+
+// --- CORE: EQUIPOS ---
+
+model equipos {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  nombre            String    @unique @db.VarChar(255)
+  max_programadores Int       @default(2)
+  max_disenadores   Int       @default(1)
+  max_testers       Int       @default(1)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  
+  miembros          equipo_miembros[]
+  proyectos         proyectos[]
+  interacciones     equipo_interacciones[]
+}
+
+enum TeamRole {
+  LIDER
+  PROGRAMADOR
+  DISENADOR
+  TESTER
+}
+
+model equipo_miembros {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  equipo_id  BigInt    @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  rol        TeamRole  @default(PROGRAMADOR)
+  created_at DateTime  @default(now())
+  
+  equipo     equipos   @relation(fields: [equipo_id], references: [id], onDelete: Cascade)
+  user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([equipo_id, user_id])
+}
+
+enum InteraccionTipo {
+  INVITACION
+  SOLICITUD
+}
+
+enum InteraccionEstado {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
+model equipo_interacciones {
+  id              BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  equipo_id       BigInt            @db.UnsignedBigInt
+  user_id         BigInt            @db.UnsignedBigInt
+  tipo            InteraccionTipo
+  estado          InteraccionEstado @default(PENDIENTE)
+  mensaje         String?           @db.Text
+  respondido_en   DateTime?
+  created_at      DateTime          @default(now())
+  
+  equipo          equipos           @relation(fields: [equipo_id], references: [id], onDelete: Cascade)
+  user            users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+// --- CORE: EVENTOS ---
+
+model eventos {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  nombre          String    @db.VarChar(255)
+  descripcion     String?   @db.Text
+  fecha_inicio    DateTime
+  fecha_fin       DateTime
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  
+  jueces          evento_jueces[]
+  proyectos       proyectos[]
+  criterios       evaluacion_criterios[]
+  certificados    certificados[]
+}
+
+model evento_jueces {
+  evento_id BigInt  @db.UnsignedBigInt
+  user_id   BigInt  @db.UnsignedBigInt
+  evento    eventos @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  user      users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([evento_id, user_id])
+}
+
+// --- CORE: PROYECTOS ---
+
+model proyectos {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  equipo_id       BigInt    @db.UnsignedBigInt
+  evento_id       BigInt    @db.UnsignedBigInt
+  nombre          String    @db.VarChar(255)
+  descripcion     String?   @db.Text
+  repositorio_url String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  
+  equipo          equipos   @relation(fields: [equipo_id], references: [id], onDelete: Cascade)
+  evento          eventos   @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  avances         proyecto_avances[]
+  evaluaciones    evaluaciones[]
+}
+
+model proyecto_avances {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  proyecto_id BigInt    @db.UnsignedBigInt
+  descripcion String    @db.Text
+  fecha       DateTime  @default(now())
+  
+  proyecto    proyectos @relation(fields: [proyecto_id], references: [id], onDelete: Cascade)
+}
+
+// --- CORE: EVALUACIONES ---
+
+model evaluacion_criterios {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  evento_id   BigInt    @db.UnsignedBigInt
+  nombre      String    @db.VarChar(255)
+  ponderacion Decimal   @db.Decimal(5, 2)
+  
+  evento      eventos   @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  evaluaciones evaluaciones[]
+}
+
+model evaluaciones {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  proyecto_id  BigInt    @db.UnsignedBigInt
+  juez_id      BigInt    @db.UnsignedBigInt
+  criterio_id  BigInt    @db.UnsignedBigInt
+  puntuacion   Decimal   @db.Decimal(5, 2)
+  comentario   String?   @db.Text
+  created_at   DateTime  @default(now())
+  
+  proyecto     proyectos            @relation(fields: [proyecto_id], references: [id], onDelete: Cascade)
+  juez         users                @relation(fields: [juez_id], references: [id], onDelete: Cascade)
+  criterio     evaluacion_criterios @relation(fields: [criterio_id], references: [id], onDelete: Cascade)
+}
+
+// --- UTILS ---
+
+model certificados {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id         BigInt    @db.UnsignedBigInt
+  evento_id       BigInt    @db.UnsignedBigInt
+  tipo            String    @db.VarChar(255)
+  archivo_path    String?   @db.VarChar(255)
+  codigo_qr       String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  
+  user            users     @relation(fields: [user_id], references: [id] ) // error check if i should use a relation name
+  evento          eventos   @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+}
+
+model user_preferences {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt   @unique @db.UnsignedBigInt
+  settings   String?  @db.Text // JSON string
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}

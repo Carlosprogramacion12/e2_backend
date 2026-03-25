@@ -13,6 +13,8 @@ const routes = [
   { path: '/admin/proyectos', name: 'Proyectos', component: () => import('../views/admin/ProyectosView.vue'), meta: { role: 'Admin' } },
   { path: '/admin/resultados', name: 'Resultados', component: () => import('../views/admin/ResultadosView.vue'), meta: { role: 'Admin' } },
   { path: '/admin/carreras', name: 'Carreras', component: () => import('../views/admin/CarrerasView.vue'), meta: { role: 'Admin' } },
+  { path: '/admin/perfiles', name: 'Perfiles', component: () => import('../views/admin/PerfilesView.vue'), meta: { role: 'Admin' } },
+  { path: '/admin/reportes', name: 'Reportes', component: () => import('../views/admin/ReportesView.vue'), meta: { role: 'Admin' } },
   // Juez
   { path: '/juez/dashboard', name: 'JuezDashboard', component: () => import('../views/juez/DashboardView.vue'), meta: { role: 'Juez' } },
   { path: '/juez/evaluar/:proyectoId', name: 'Evaluacion', component: () => import('../views/juez/EvaluacionView.vue'), meta: { role: 'Juez' } },
@@ -32,13 +34,20 @@ const router = createRouter({ history: createWebHistory(), routes })
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
 
-  if (to.meta.guest && auth.isAuthenticated) {
-    return next(auth.dashboardRoute)
+  if (to.meta.guest) {
+    if (auth.isAuthenticated) {
+      const dest = auth.dashboardRoute
+      if (dest !== '/login') return next(dest)
+    }
+    return next()
   }
 
   if (to.meta.role) {
     if (!auth.isAuthenticated) return next('/login')
-    if (!auth.roles.includes(to.meta.role)) return next(auth.dashboardRoute)
+    if (!auth.roles.includes(to.meta.role)) {
+      const dest = auth.dashboardRoute
+      return next(dest !== '/login' ? dest : '/login')
+    }
   }
 
   next()

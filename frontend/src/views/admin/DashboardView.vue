@@ -5,10 +5,16 @@
       <!-- Header Actions -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
         <h2 style="font-size:1.25rem;font-weight:600;color:#1f2937" class="dark-text">Dashboard</h2>
-        <a :href="'/api/admin/dashboard/report'" target="_blank" class="btn btn-indigo">
-          <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Generar Reporte PDF
-        </a>
+        <div style="display:flex;gap:0.75rem">
+          <button @click="openCustomizer = true" class="btn btn-white dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700">
+            <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            Personalizar
+          </button>
+          <a :href="'/api/admin/dashboard/report'" target="_blank" class="btn btn-indigo">
+            <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Generar Reporte PDF
+          </a>
+        </div>
       </div>
 
       <!-- Stats Cards (matching Laravel hover:scale-[1.02]) -->
@@ -126,6 +132,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tool
 
 const loading = ref(true)
 const data = ref({})
+const openCustomizer = ref(false)
 
 const palette = ['#4f46e5','#ec4899','#10b981','#f59e0b','#3b82f6','#8b5cf6']
 

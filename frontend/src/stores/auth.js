@@ -2,10 +2,19 @@ import { defineStore } from 'pinia'
 import api from '../services/api'
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    token: localStorage.getItem('token') || null
-  }),
+  state: () => {
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('user') || 'null');
+    } catch (e) {
+      console.error('Error parsing user from localStorage', e);
+      localStorage.removeItem('user');
+    }
+    return {
+      user,
+      token: localStorage.getItem('token') || null
+    }
+  },
 
   getters: {
     isAuthenticated: (state) => !!state.token,
@@ -14,9 +23,10 @@ export const useAuthStore = defineStore('auth', {
     isJuez: (state) => state.user?.roles?.includes('Juez'),
     isParticipante: (state) => state.user?.roles?.includes('Participante'),
     dashboardRoute: (state) => {
-      if (state.user?.roles?.includes('Admin')) return '/admin/dashboard'
-      if (state.user?.roles?.includes('Juez')) return '/juez/dashboard'
-      if (state.user?.roles?.includes('Participante')) return '/participante/dashboard'
+      const roles = state.user?.roles || []
+      if (roles.includes('Admin')) return '/admin/dashboard'
+      if (roles.includes('Juez')) return '/juez/dashboard'
+      if (roles.includes('Participante')) return '/participante/dashboard'
       return '/login'
     }
   },
