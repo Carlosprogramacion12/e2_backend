@@ -13,12 +13,11 @@ export class EquipoRepository {
           proyectos: {
             include: { eventos: true }
           },
-          equipo_participante: {
+          equipo_miembros: {
             include: {
-              participantes: {
-                include: { users: true }
-              },
-              perfiles: true
+              users: {
+                select: { id: true, name: true, email: true, carrera: true }
+              }
             }
           }
         },
@@ -38,15 +37,11 @@ export class EquipoRepository {
         proyectos: {
           include: { eventos: true }
         },
-        equipo_participante: {
+        equipo_miembros: {
           include: {
-            participantes: {
-              include: { 
-                users: true,
-                carreras: true 
-              }
-            },
-            perfiles: true
+            users: {
+              select: { id: true, name: true, email: true, carrera: true }
+            }
           }
         }
       }
@@ -73,22 +68,21 @@ export class EquipoRepository {
   }
 
   async addMiembro(equipoId: number, data: AddMiembroDto) {
-    return prisma.equipo_participante.create({
+    return prisma.equipo_miembros.create({
       data: {
         equipo_id: BigInt(equipoId),
-        participante_id: BigInt(data.participante_id),
-        perfil_id: BigInt(data.perfil_id),
-        created_at: new Date(),
-        updated_at: new Date()
+        user_id: BigInt(data.participante_id),
+        rol: (data.perfil_id === 1 ? 'LIDER' : data.perfil_id === 2 ? 'PROGRAMADOR' : data.perfil_id === 3 ? 'DISENADOR' : 'TESTER') as any,
+        created_at: new Date()
       }
     });
   }
 
-  async removeMiembro(equipoId: number, participanteId: number) {
-    return prisma.equipo_participante.deleteMany({
+  async removeMiembro(equipoId: number, userId: number) {
+    return prisma.equipo_miembros.deleteMany({
       where: {
         equipo_id: BigInt(equipoId),
-        participante_id: BigInt(participanteId)
+        user_id: BigInt(userId)
       }
     });
   }

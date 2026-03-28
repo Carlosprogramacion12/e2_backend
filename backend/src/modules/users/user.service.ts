@@ -1,32 +1,44 @@
 import bcrypt from 'bcryptjs';
 import { UserRepository } from './user.repository';
 import { CreateUserDto, UpdateUserDto, UserQueryOptions } from './user.types';
-import prisma from '../../utils/prisma';
 
 const userRepository = new UserRepository();
+
+// Available roles for the frontend dropdown
+const AVAILABLE_ROLES = [
+  { id: 1, nombre: 'Admin' },
+  { id: 2, nombre: 'Juez' },
+  { id: 3, nombre: 'Participante' }
+];
+
+const ROLE_ID_MAP: Record<number, string> = {
+  1: 'ADMIN', 2: 'JUEZ', 3: 'PARTICIPANTE'
+};
+
+const ROLE_NAME_MAP: Record<string, string> = {
+  'ADMIN': 'Admin', 'JUEZ': 'Juez', 'PARTICIPANTE': 'Participante'
+};
 
 export class UserService {
   async getAllUsers(options: UserQueryOptions) {
     const { count, rows } = await userRepository.findAllPaginated(options);
-    const roles = await prisma.roles.findMany();
-
     const limit = options.limit || 10;
     const page = options.page || 1;
 
     return {
       success: true,
       data: {
-        usuarios: rows.map((u) => ({
+        usuarios: rows.map((u: any) => ({
           id: Number(u.id),
           name: u.name,
           email: u.email,
           created_at: u.created_at,
-          roles: u.user_rol.map((ur) => ({
-            id: Number(ur.roles.id),
-            nombre: ur.roles.nombre
-          }))
+          roles: [{
+            id: Object.entries(ROLE_ID_MAP).find(([_, v]) => v === u.role)?.[0] || 3,
+            nombre: ROLE_NAME_MAP[u.role] || 'Participante'
+          }]
         })),
-        roles: roles.map((r) => ({ id: Number(r.id), nombre: r.nombre })),
+        roles: AVAILABLE_ROLES,
         pagination: {
           total: count,
           page,
@@ -44,20 +56,13 @@ export class UserService {
     }
 
     const hashedPassword = await bcrypt.hash(data.password!, 12);
+    const role = ROLE_ID_MAP[data.rol_id] || 'PARTICIPANTE';
     
-    // Default config values and insert user
-    const user = await userRepository.create({
+    await userRepository.create({
       ...data,
-      password: hashedPassword
+      password: hashedPassword,
+      role
     });
-
-    await userRepository.assignRole(Number(user.id), data.rol_id);
-
-    // If role is Participante (ID: 3 usually, check by DB name to be safe)
-    const role = await prisma.roles.findUnique({ where: { id: BigInt(data.rol_id) } });
-    if (role && role.nombre === 'Participante') {
-      await userRepository.createParticipanteProfile(Number(user.id));
-    }
 
     return { success: true, message: 'Usuario creado y rol asignado correctamente.' };
   }
@@ -68,7 +73,6 @@ export class UserService {
       throw { status: 404, message: 'Usuario no encontrado' };
     }
 
-    const roles = await prisma.roles.findMany();
     return {
       success: true,
       data: {
@@ -77,9 +81,12 @@ export class UserService {
           name: user.name,
           email: user.email,
           created_at: user.created_at,
-          roles: user.user_rol.map((ur) => ({ id: Number(ur.roles.id), nombre: ur.roles.nombre }))
+          roles: [{
+            id: Object.entries(ROLE_ID_MAP).find(([_, v]) => v === (user as any).role)?.[0] || 3,
+            nombre: ROLE_NAME_MAP[(user as any).role] || 'Participante'
+          }]
         },
-        roles: roles.map((r) => ({ id: Number(r.id), nombre: r.nombre }))
+        roles: AVAILABLE_ROLES
       }
     };
   }
@@ -100,7 +107,8 @@ export class UserService {
     });
 
     if (data.rol_id) {
-      await userRepository.setRoles(id, data.rol_id);
+      const role = ROLE_ID_MAP[data.rol_id] || 'PARTICIPANTE';
+      await userRepository.setRole(id, role);
     }
 
     return { success: true, message: 'Usuario actualizado correctamente.' };

@@ -2,92 +2,82 @@ import prisma from '../../utils/prisma';
 import { CrearInvitacionDto } from './invitacion.types';
 
 export class InvitacionRepository {
-  async findParticipanteByUserId(userId: number) {
-    return prisma.participantes.findFirst({ where: { user_id: BigInt(userId) } });
-  }
-
-  async findParticipanteById(id: number) {
-    return prisma.participantes.findUnique({ where: { id: BigInt(id) } });
-  }
-
-  async getMisInvitaciones(participanteId: number) {
-    return prisma.invitaciones_equipo.findMany({
-      where: { participante_id: BigInt(participanteId) },
+  // Get pending invitations for a user
+  async getMisInvitaciones(userId: number) {
+    return prisma.equipo_interacciones.findMany({
+      where: {
+        user_id: BigInt(userId),
+        tipo: 'INVITACION',
+        estado: 'PENDIENTE'
+      },
       include: {
         equipos: {
           include: { proyectos: true }
-        },
-        participantes_invitaciones_equipo_enviada_por_participante_idToparticipantes: {
-          include: { users: true }
-        },
-        perfiles: true
+        }
       },
       orderBy: { created_at: 'desc' }
     });
   }
 
+  // Get invitations sent by a team
   async getInvitacionesEnviadas(equipoId: number) {
-    return prisma.invitaciones_equipo.findMany({
-      where: { equipo_id: BigInt(equipoId) },
+    return prisma.equipo_interacciones.findMany({
+      where: {
+        equipo_id: BigInt(equipoId),
+        tipo: 'INVITACION'
+      },
       include: {
-        participantes_invitaciones_equipo_participante_idToparticipantes: {
-          include: { users: true }
-        },
-        perfiles: true
+        users: { select: { id: true, name: true, email: true } }
       },
       orderBy: { created_at: 'desc' }
     });
   }
 
-  async crear(equipoId: number, enviadaPorId: number, dto: CrearInvitacionDto) {
-    return prisma.invitaciones_equipo.create({
+  async crear(equipoId: number, dto: CrearInvitacionDto) {
+    return prisma.equipo_interacciones.create({
       data: {
         equipo_id: BigInt(equipoId),
-        participante_id: BigInt(dto.participante_id),
-        perfil_sugerido_id: dto.perfil_sugerido_id ? BigInt(dto.perfil_sugerido_id) : undefined,
-        mensaje: dto.mensaje,
-        estado: 'pendiente',
-        enviada_por_participante_id: BigInt(enviadaPorId),
-        created_at: new Date(),
-        updated_at: new Date()
+        user_id: BigInt(dto.participante_id!),
+        tipo: 'INVITACION',
+        estado: 'PENDIENTE',
+        mensaje: dto.mensaje || null,
+        created_at: new Date()
       }
     });
   }
 
   async findById(id: number) {
-    return prisma.invitaciones_equipo.findUnique({ where: { id: BigInt(id) } });
+    return prisma.equipo_interacciones.findUnique({
+      where: { id: BigInt(id) }
+    });
   }
 
-  async aceptar(invitacionId: number, equipoId: number, participanteId: number, perfilId: number) {
-    const ops = [
-      prisma.invitaciones_equipo.update({
+  async aceptar(invitacionId: number, equipoId: number, userId: number) {
+    return prisma.$transaction([
+      prisma.equipo_interacciones.update({
         where: { id: BigInt(invitacionId) },
         data: {
-          estado: 'aceptada',
-          respondida_en: new Date(),
-          updated_at: new Date()
+          estado: 'ACEPTADA',
+          respondido_en: new Date(),
         }
       }),
-      prisma.equipo_participante.create({
+      prisma.equipo_miembros.create({
         data: {
           equipo_id: BigInt(equipoId),
-          participante_id: BigInt(participanteId),
-          perfil_id: BigInt(perfilId),
-          created_at: new Date(),
-          updated_at: new Date()
+          user_id: BigInt(userId),
+          rol: 'PROGRAMADOR',
+          created_at: new Date()
         }
       })
-    ];
-    await prisma.$transaction(ops);
+    ]);
   }
 
   async rechazar(invitacionId: number) {
-    return prisma.invitaciones_equipo.update({
+    return prisma.equipo_interacciones.update({
       where: { id: BigInt(invitacionId) },
       data: {
-        estado: 'rechazada',
-        respondida_en: new Date(),
-        updated_at: new Date()
+        estado: 'RECHAZADA',
+        respondido_en: new Date(),
       }
     });
   }

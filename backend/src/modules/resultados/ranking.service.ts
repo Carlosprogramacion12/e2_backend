@@ -1,40 +1,30 @@
 import prisma from '../../utils/prisma';
 
 export class RankingService {
-  /**
-   * Calcula el ranking para un evento dado
-   * @param eventoId ID del evento
-   * @returns ranking ordenado descendentemente por puntaje
-   */
   async calcularRanking(eventoId: number) {
     const proyectos = await prisma.proyectos.findMany({
       where: { evento_id: BigInt(eventoId) },
       include: {
-        calificaciones: true,
+        evaluaciones: true,
         equipos: {
           include: {
-            equipo_participante: {
-              include: {
-                participantes: {
-                  include: { users: true }
-                }
-              }
+            equipo_miembros: {
+              include: { users: true }
             }
           }
         }
       }
     });
 
-    const criterios = await prisma.criterio_evaluacion.findMany({
+    const criterios = await prisma.evaluacion_criterios.findMany({
       where: { evento_id: BigInt(eventoId) }
     });
 
-    const ranking = proyectos.map((proyecto) => {
+    const ranking = proyectos.map((proyecto: any) => {
       let totalPuntos = 0;
 
-      // Agrupar calificaciones por criterio_id
       const calificacionesPorCriterio: Record<string, number[]> = {};
-      proyecto.calificaciones.forEach((cal) => {
+      proyecto.evaluaciones.forEach((cal: any) => {
         const critId = cal.criterio_id.toString();
         if (!calificacionesPorCriterio[critId]) {
           calificacionesPorCriterio[critId] = [];
@@ -42,21 +32,21 @@ export class RankingService {
         calificacionesPorCriterio[critId].push(Number(cal.puntuacion));
       });
 
-      criterios.forEach((criterio) => {
+      criterios.forEach((criterio: any) => {
         const notas = calificacionesPorCriterio[criterio.id.toString()];
         if (notas && notas.length > 0) {
-          const promedio = notas.reduce((a, b) => a + b, 0) / notas.length;
+          const promedio = notas.reduce((a: number, b: number) => a + b, 0) / notas.length;
           const puntosReales = (promedio * Number(criterio.ponderacion)) / 100;
           totalPuntos += puntosReales;
         }
       });
 
-      const integrantes = proyecto.equipos?.equipo_participante.map((ep) => ({
-        id: Number(ep.participantes.id),
-        user_id: Number(ep.participantes.user_id),
-        name: ep.participantes.users.name,
-        email: ep.participantes.users.email,
-        perfil_id: Number(ep.perfil_id)
+      const integrantes = proyecto.equipos?.equipo_miembros?.map((m: any) => ({
+        id: Number(m.users.id),
+        user_id: Number(m.users.id),
+        name: m.users.name,
+        email: m.users.email,
+        rol: m.rol
       })) || [];
 
       return {
@@ -68,24 +58,20 @@ export class RankingService {
       };
     });
 
-    // Ordenar de mayor a menor
-    ranking.sort((a, b) => b.puntaje - a.puntaje);
+    ranking.sort((a: any, b: any) => b.puntaje - a.puntaje);
     return ranking;
   }
 
-  /**
-   * Calcula el puntaje y datos de radar chart para un proyecto específico
-   */
   async calcularPuntajeProyecto(proyectoId: number) {
     const proyecto = await prisma.proyectos.findUnique({
       where: { id: BigInt(proyectoId) },
-      include: { calificaciones: true, eventos: true }
+      include: { evaluaciones: true, eventos: true }
     });
 
     if (!proyecto) throw new Error('Proyecto no encontrado');
 
-    const criterios = await prisma.criterio_evaluacion.findMany({
-      where: { evento_id: proyecto.evento_id }
+    const criterios = await prisma.evaluacion_criterios.findMany({
+      where: { evento_id: (proyecto as any).evento_id }
     });
 
     const chartLabels: string[] = [];
@@ -93,7 +79,7 @@ export class RankingService {
     let puntajeTotal = 0;
 
     const calificacionesPorCriterio: Record<string, number[]> = {};
-    proyecto.calificaciones.forEach((cal) => {
+    (proyecto as any).evaluaciones.forEach((cal: any) => {
       const critId = cal.criterio_id.toString();
       if (!calificacionesPorCriterio[critId]) {
         calificacionesPorCriterio[critId] = [];
@@ -101,11 +87,11 @@ export class RankingService {
       calificacionesPorCriterio[critId].push(Number(cal.puntuacion));
     });
 
-    criterios.forEach((criterio) => {
+    criterios.forEach((criterio: any) => {
       chartLabels.push(criterio.nombre);
       const notas = calificacionesPorCriterio[criterio.id.toString()];
       const promedio = (notas && notas.length > 0)
-        ? notas.reduce((a, b) => a + b, 0) / notas.length
+        ? notas.reduce((a: number, b: number) => a + b, 0) / notas.length
         : 0;
 
       chartData.push(Math.round(promedio * 10) / 10);

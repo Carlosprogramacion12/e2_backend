@@ -55,11 +55,20 @@ export class ProyectoService {
         ...proyecto.eventos,
         id: Number(proyecto.eventos.id)
       } : null,
-      calificaciones: proyecto.calificaciones.map((c) => ({
+      evaluaciones: (proyecto as any).evaluaciones.map((c: any) => ({
         ...c,
         id: Number(c.id),
         proyecto_id: Number(c.proyecto_id),
-        juez_user_id: Number(c.juez_user_id),
+        juez_user_id: Number(c.juez_id),
+        criterio_id: Number(c.criterio_id),
+        puntuacion: Number(c.puntuacion)
+      })),
+      // Keep calificaciones alias for frontend compatibility
+      calificaciones: (proyecto as any).evaluaciones.map((c: any) => ({
+        ...c,
+        id: Number(c.id),
+        proyecto_id: Number(c.proyecto_id),
+        juez_user_id: Number(c.juez_id),
         criterio_id: Number(c.criterio_id),
         puntuacion: Number(c.puntuacion)
       }))

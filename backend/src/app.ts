@@ -27,19 +27,25 @@ import { equipoRouter } from './modules/equipos/equipo.router';
 import { proyectoRouter } from './modules/proyectos/proyecto.router';
 import { adminRouter } from './modules/admin/admin.router';
 import { resultadosRouter } from './modules/resultados/resultados.router';
-import { carreraRouter } from './modules/carreras/carrera.router';
-import { perfilRouter } from './modules/perfiles/perfil.router';
 import { juezRouter } from './modules/jueces/juez.router';
-import { participanteRouter } from './modules/participantes/participante.router';
 import { avanceRouter } from './modules/avances/avance.router';
-import { solicitudRouter } from './modules/solicitudes/solicitud.router';
 import { invitacionRouter } from './modules/invitaciones/invitacion.router';
 import { constanciaRouter } from './modules/constancias/constancias.router';
 import { reportesRouter } from './modules/reportes/reportes.router';
+import { participanteDashboardRouter } from './modules/participante/participante.router';
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
+
+// Root route for API health check
+app.get('/', (req, res) => {
+  res.json({
+    message: 'API del Sistema de Gestión de Proyectos Académicos (Deltos) funcionando',
+    version: '1.0.0',
+    docs: '/api-docs'
+  });
+});
 
 // Main Routes
 app.use('/api/auth', authRouter);
@@ -50,15 +56,12 @@ app.use('/api/admin/equipos', equipoRouter);
 app.use('/api/admin/proyectos', proyectoRouter);
 app.use('/api/admin/dashboard', adminRouter);
 app.use('/api/admin/resultados', resultadosRouter);
-app.use('/api/admin/carreras', carreraRouter);
-app.use('/api/admin/perfiles', perfilRouter);
 app.use('/api/admin/constancias', constanciaRouter);
 app.use('/api/admin/reportes', reportesRouter);
 app.use('/api/juez', juezRouter);
 app.use('/api/participante/avances', avanceRouter);
-app.use('/api/participante/solicitudes', solicitudRouter);
 app.use('/api/participante/invitaciones', invitacionRouter);
-app.use('/api/participante', participanteRouter);
+app.use('/api/participante/dashboard', participanteDashboardRouter);
 
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

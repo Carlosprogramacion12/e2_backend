@@ -10,10 +10,11 @@ export class ConstanciaService {
       data: constancias.map((c: any) => ({
         ...c,
         id: Number(c.id),
-        participante_id: Number(c.participante_id),
+        user_id: Number(c.user_id),
+        participante_id: Number(c.user_id), // compatibilidad frontend
         evento_id: Number(c.evento_id),
-        participantes: c.participantes ? { ...c.participantes, id: Number(c.participantes.id), user_id: Number(c.participantes.user_id) } : null,
-        eventos: c.eventos ? { ...c.eventos, id: Number(c.eventos.id) } : null,
+        user: c.user ? { ...c.user, id: Number(c.user.id) } : null,
+        evento: c.evento ? { ...c.evento, id: Number(c.evento.id) } : null,
       })),
     };
   }
@@ -27,25 +28,28 @@ export class ConstanciaService {
       data: {
         ...c,
         id: Number(c.id),
-        participante_id: Number(c.participante_id),
+        user_id: Number(c.user_id),
+        participante_id: Number(c.user_id),
         evento_id: Number(c.evento_id),
-        participantes: c.participantes ? { ...c.participantes, id: Number(c.participantes.id), user_id: Number(c.participantes.user_id) } : null,
-        eventos: c.eventos ? { ...c.eventos, id: Number(c.eventos.id) } : null,
+        user: (c as any).user ? { ...(c as any).user, id: Number((c as any).user.id) } : null,
+        evento: (c as any).evento ? { ...(c as any).evento, id: Number((c as any).evento.id) } : null,
       },
     };
   }
 
-  async getConstanciasByParticipante(participanteId: number, eventoId?: number) {
-    const constancias = await constanciaRepository.findByParticipante(participanteId, eventoId);
+  async getConstanciasByUser(userId: number, eventoId?: number) {
+    const constancias = await constanciaRepository.findByUser(userId, eventoId);
     return {
       success: true,
       data: constancias.map((c: any) => ({
         ...c,
         id: Number(c.id),
-        participante_id: Number(c.participante_id),
+        user_id: Number(c.user_id),
+        participante_id: Number(c.user_id),
         evento_id: Number(c.evento_id),
-        eventos: c.eventos ? { ...c.eventos, id: Number(c.eventos.id) } : null,
+        evento: c.evento ? { ...c.evento, id: Number(c.evento.id) } : null,
       })),
     };
   }
 }
+

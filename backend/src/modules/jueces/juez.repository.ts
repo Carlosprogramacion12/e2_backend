@@ -3,43 +3,40 @@ import { StoreEvaluacionDto } from './juez.types';
 
 export class JuezRepository {
   async getDashboardData(userId: number) {
-    // 1. Obtener eventos asignados al juez
+    // 1. Obtener eventos asignados al juez via evento_jueces
     const eventosAsignados = await prisma.eventos.findMany({
       where: {
-        evento_user: {
+        evento_jueces: {
           some: { user_id: BigInt(userId) }
         }
       }
     });
 
-    // 2. Por cada evento, traer los proyectos, sus equipos y si el juez ya lo calificó
+    // 2. Por cada evento, traer proyectos y si el juez ya evaluó
     const eventosConProyectos = await Promise.all(
       eventosAsignados.map(async (evento) => {
         const proyectos = await prisma.proyectos.findMany({
           where: { evento_id: evento.id },
           include: {
             equipos: true,
-            calificaciones: {
-              where: { juez_user_id: BigInt(userId) }
+            evaluaciones: {
+              where: { juez_id: BigInt(userId) }
             }
           }
         });
 
         return {
-          evento: {
-            id: Number(evento.id),
-            nombre: evento.nombre,
-            fecha_inicio: evento.fecha_inicio,
-            fecha_fin: evento.fecha_fin
-          },
+          id: Number(evento.id),
+          nombre: evento.nombre,
+          descripcion: evento.descripcion,
+          fecha_inicio: evento.fecha_inicio,
+          fecha_fin: evento.fecha_fin,
           proyectos: proyectos.map((p) => ({
             id: Number(p.id),
             nombre: p.nombre,
             equipo: p.equipos?.nombre || 'Sin equipo',
-            evaluado: p.calificaciones.length > 0
-          })),
-          totalProyectos: proyectos.length,
-          evaluados: proyectos.filter((p) => p.calificaciones.length > 0).length
+            evaluado: p.evaluaciones.length > 0
+          }))
         };
       })
     );
@@ -51,12 +48,12 @@ export class JuezRepository {
     const evento = await prisma.eventos.findUnique({
       where: { id: BigInt(eventoId) },
       include: {
-        criterio_evaluacion: true,
+        evaluacion_criterios: true,
         proyectos: {
           include: {
             equipos: true,
-            calificaciones: {
-              where: { juez_user_id: BigInt(juezId) }
+            evaluaciones: {
+              where: { juez_id: BigInt(juezId) }
             }
           }
         }
@@ -70,36 +67,33 @@ export class JuezRepository {
       where: { id: BigInt(proyectoId) },
       include: {
         eventos: {
-          include: { criterio_evaluacion: true }
+          include: { evaluacion_criterios: true }
         },
         equipos: true,
-        calificaciones: {
-          where: { juez_user_id: BigInt(juezId) }
+        evaluaciones: {
+          where: { juez_id: BigInt(juezId) }
         }
       }
     });
 
     if (!proyecto) return null;
 
-    // Verificar si el juez está asignado a este evento
-    const asignado = await prisma.evento_user.findFirst({
+    // Verify juez is assigned to this event
+    const asignado = await prisma.evento_jueces.findUnique({
       where: {
-        evento_id: proyecto.evento_id,
-        user_id: BigInt(juezId)
+        evento_id_user_id: {
+          evento_id: proyecto.evento_id,
+          user_id: BigInt(juezId)
+        }
       }
     });
 
     if (!asignado) throw { status: 403, message: 'No tienes permiso para evaluar este proyecto.' };
 
-    const comentarioData = await prisma.evaluacion_comentarios.findFirst({
-      where: {
-        proyecto_id: BigInt(proyectoId),
-        juez_user_id: BigInt(juezId)
-      }
-    });
+    const comentarioEval = proyecto.evaluaciones.find((e: any) => e.comentario);
 
     const calificacionesPrevias: Record<string, number> = {};
-    proyecto.calificaciones.forEach((c) => {
+    proyecto.evaluaciones.forEach((c: any) => {
       calificacionesPrevias[c.criterio_id.toString()] = Number(c.puntuacion);
     });
 
@@ -112,7 +106,7 @@ export class JuezRepository {
         evento: proyecto.eventos ? {
           ...proyecto.eventos,
           id: Number(proyecto.eventos.id),
-          criterios: proyecto.eventos.criterio_evaluacion.map(c => ({
+          criterios: proyecto.eventos.evaluacion_criterios.map((c: any) => ({
             ...c,
             id: Number(c.id),
             evento_id: Number(c.evento_id)
@@ -124,72 +118,41 @@ export class JuezRepository {
         } : null
       },
       calificacionesPrevias,
-      comentarioPrevio: comentarioData?.comentario || ''
+      comentarioPrevio: comentarioEval?.comentario || ''
     };
   }
 
   async storeEvaluacion(proyectoId: number, juezId: number, dto: StoreEvaluacionDto) {
-    // Para simplificar y simular upserts sin triggers de unique constraint si no existen,
-    // buscamos si existe la calificacion por criterio o la creamos en un update manual.
-    
-    // Primero, validamos que el juez pertenezca al evento del proyecto
     const proyecto = await prisma.proyectos.findUnique({ where: { id: BigInt(proyectoId) }});
     if (!proyecto) throw { status: 404, message: 'Proyecto no encontrado' };
 
     const ops: any[] = [];
 
-    // Por cada criterio
     for (const [criterioIdStr, puntuacion] of Object.entries(dto.puntuaciones)) {
       const criterioId = parseInt(criterioIdStr, 10);
-      const existingCal = await prisma.calificaciones.findFirst({
+      const existingEval = await prisma.evaluaciones.findFirst({
         where: {
           proyecto_id: BigInt(proyectoId),
-          juez_user_id: BigInt(juezId),
+          juez_id: BigInt(juezId),
           criterio_id: BigInt(criterioId)
         }
       });
 
-      if (existingCal) {
-        ops.push(prisma.calificaciones.update({
-          where: { id: existingCal.id },
-          data: { puntuacion: puntuacion, updated_at: new Date() }
+      const comentario = dto.comentario || undefined;
+
+      if (existingEval) {
+        ops.push(prisma.evaluaciones.update({
+          where: { id: existingEval.id },
+          data: { puntuacion: puntuacion as any, comentario }
         }));
       } else {
-        ops.push(prisma.calificaciones.create({
+        ops.push(prisma.evaluaciones.create({
           data: {
             proyecto_id: BigInt(proyectoId),
-            juez_user_id: BigInt(juezId),
+            juez_id: BigInt(juezId),
             criterio_id: BigInt(criterioId),
-            puntuacion: puntuacion,
-            created_at: new Date(),
-            updated_at: new Date()
-          }
-        }));
-      }
-    }
-
-    // Comentario
-    if (dto.comentario !== undefined) {
-      const existingCom = await prisma.evaluacion_comentarios.findFirst({
-        where: {
-          proyecto_id: BigInt(proyectoId),
-          juez_user_id: BigInt(juezId)
-        }
-      });
-
-      if (existingCom) {
-        ops.push(prisma.evaluacion_comentarios.update({
-          where: { id: existingCom.id },
-          data: { comentario: dto.comentario, updated_at: new Date() }
-        }));
-      } else {
-        ops.push(prisma.evaluacion_comentarios.create({
-          data: {
-            proyecto_id: BigInt(proyectoId),
-            juez_user_id: BigInt(juezId),
-            comentario: dto.comentario,
-            created_at: new Date(),
-            updated_at: new Date()
+            puntuacion: puntuacion as any,
+            comentario
           }
         }));
       }

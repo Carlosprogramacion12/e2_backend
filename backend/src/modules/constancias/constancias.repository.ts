@@ -2,49 +2,47 @@ import prisma from '../../utils/prisma';
 
 export class ConstanciaRepository {
   async findAll() {
-    return prisma.constancias.findMany({
+    return prisma.certificados.findMany({
       include: {
-        participantes: true,
-        eventos: true,
+        user: true,
+        evento: true,
       },
     });
   }
 
   async findById(id: number) {
-    return prisma.constancias.findUnique({
+    return prisma.certificados.findUnique({
       where: { id: BigInt(id) },
-      include: { participantes: true, eventos: true },
+      include: { user: true, evento: true },
     });
   }
 
-  async findByParticipante(participanteId: number, eventoId?: number) {
-    const whereClause: any = { participante_id: BigInt(participanteId) };
+  async findByUser(userId: number, eventoId?: number) {
+    const whereClause: any = { user_id: BigInt(userId) };
     if (eventoId) whereClause.evento_id = BigInt(eventoId);
     
-    return prisma.constancias.findMany({
+    return prisma.certificados.findMany({
       where: whereClause,
-      include: { eventos: true },
+      include: { evento: true },
     });
   }
 
   async create(data: any) {
-    return prisma.constancias.create({
+    return prisma.certificados.create({
       data: {
-        participante_id: BigInt(data.participante_id),
+        user_id: BigInt(data.user_id || data.participante_id),
         evento_id: BigInt(data.evento_id),
         tipo: data.tipo,
         archivo_path: data.archivo_path,
         codigo_qr: data.codigo_qr,
-        created_at: new Date(),
-        updated_at: new Date(),
       },
     });
   }
 
   async delete(id: number) {
-    return prisma.constancias.update({
+    return prisma.certificados.delete({
       where: { id: BigInt(id) },
-      data: { deleted_at: new Date() },
     });
   }
 }
+

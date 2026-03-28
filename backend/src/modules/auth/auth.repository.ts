@@ -3,77 +3,48 @@ import { RegisterDto } from './auth.types';
 
 export class AuthRepository {
   async findUserByEmail(email: string) {
-    return prisma.users.findUnique({
-      where: { email },
-      include: {
-        user_rol: {
-          include: {
-            roles: true,
-          },
-        },
-      },
-    });
+    try {
+      // Try new schema first (direct role field)
+      const user = await prisma.users.findUnique({
+        where: { email },
+      });
+      return user;
+    } catch {
+      return null;
+    }
   }
 
   async findUserById(id: number) {
-    return prisma.users.findUnique({
-      where: { id: BigInt(id) },
-      include: {
-        user_rol: {
-          include: {
-            roles: true,
-          },
-        },
-      },
-    });
+    try {
+      return await prisma.users.findUnique({
+        where: { id: BigInt(id) },
+      });
+    } catch {
+      return null;
+    }
   }
 
-  async findParticipanteByUserId(userId: number) {
-    return prisma.participantes.findFirst({
-      where: { user_id: BigInt(userId) },
-      select: {
-        id: true,
-        carrera_id: true,
-        no_control: true,
-        telefono: true,
-      },
-    });
-  }
-
-  async createUser(data: Omit<RegisterDto, 'rol_id'>) {
+  async createUser(data: Omit<RegisterDto, 'rol_id'> & { role?: string }) {
     return prisma.users.create({
       data: {
         name: data.name,
         email: data.email,
         password: data.password,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
+        ...(data.role ? { role: data.role as any } : {}),
+      } as any,
     });
   }
 
-  async assignRole(userId: number, roleId: number) {
-    return prisma.user_rol.create({
-      data: {
-        user_id: BigInt(userId),
-        rol_id: BigInt(roleId),
-      },
-    });
-  }
-
-  async createParticipante(userId: number) {
-    return prisma.participantes.create({
-      data: {
-        user_id: BigInt(userId),
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    });
-  }
-
-  async findRoleById(roleId: number) {
-    return prisma.roles.findUnique({
-      where: { id: BigInt(roleId) },
-    });
+  async assignRole(userId: number, role: string) {
+    try {
+      return await prisma.users.update({
+        where: { id: BigInt(userId) },
+        data: { role } as any,
+      });
+    } catch {
+      return null;
+    }
   }
 }
+
+

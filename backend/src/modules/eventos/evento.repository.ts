@@ -22,8 +22,8 @@ export class EventoRepository {
     return prisma.eventos.findUnique({
       where: { id: BigInt(id) },
       include: {
-        criterio_evaluacion: true,
-        evento_user: {
+        evaluacion_criterios: true,
+        evento_jueces: {
           include: { users: true },
         },
       },
@@ -61,14 +61,14 @@ export class EventoRepository {
   }
 
   async setJueces(eventoId: number, juecesIds: number[]) {
-    // Eliminar jueces actuales
-    await prisma.evento_user.deleteMany({
+    // Delete existing judges
+    await prisma.evento_jueces.deleteMany({
       where: { evento_id: BigInt(eventoId) },
     });
 
-    // Insertar nuevos
+    // Create new assignments
     if (juecesIds.length > 0) {
-      await prisma.evento_user.createMany({
+      await prisma.evento_jueces.createMany({
         data: juecesIds.map((userId) => ({
           evento_id: BigInt(eventoId),
           user_id: BigInt(userId),
@@ -78,21 +78,11 @@ export class EventoRepository {
   }
 
   async getAvailableJueces() {
-    return prisma.users.findMany({
-      where: {
-        user_rol: {
-          some: {
-            roles: {
-              nombre: 'Juez',
-            },
-          },
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
+    // New schema: users with role = 'JUEZ'
+    const jueces = await prisma.users.findMany({
+      where: { role: 'JUEZ' },
+      select: { id: true, name: true, email: true }
     });
+    return jueces;
   }
 }

@@ -3,26 +3,14 @@ import { SaveDashboardPreferencesDto } from './admin.types';
 
 export class AdminRepository {
   async getDashboardMetrics() {
-    // 1. Total Jueces
+    // 1. Total Jueces (using role enum)
     const total_jueces = await prisma.users.count({
-      where: {
-        user_rol: {
-          some: {
-            roles: { nombre: 'Juez' }
-          }
-        }
-      }
+      where: { role: 'JUEZ' }
     });
 
     // 2. Total Participantes
     const total_participantes = await prisma.users.count({
-      where: {
-        user_rol: {
-          some: {
-            roles: { nombre: 'Participante' }
-          }
-        }
-      }
+      where: { role: 'PARTICIPANTE' }
     });
 
     // 3. Totales Simples
@@ -37,23 +25,22 @@ export class AdminRepository {
       orderBy: { fecha_inicio: 'asc' }
     });
 
-    // 5. Participantes por Carrera
-    const participantesPorCarreraData = await prisma.$queryRaw<Array<{ nombre: string, total: bigint }>>`
-      SELECT c.nombre, COUNT(*) as total
-      FROM participantes p
-      JOIN carreras c ON p.carrera_id = c.id
-      WHERE p.deleted_at IS NULL AND c.deleted_at IS NULL
-      GROUP BY c.nombre
+    // 5. Participantes por Carrera (from users.carrera field)
+    const participantesPorCarreraData = await prisma.$queryRaw<Array<{ carrera: string, total: bigint }>>`
+      SELECT carrera as nombre, COUNT(*) as total
+      FROM users
+      WHERE role = 'PARTICIPANTE' AND carrera IS NOT NULL AND carrera != ''
+      GROUP BY carrera
     `;
     const participantesPorCarrera: Record<string, number> = {};
     participantesPorCarreraData.forEach(row => {
-      participantesPorCarrera[row.nombre] = Number(row.total);
+      participantesPorCarrera[row.carrera || 'Sin carrera'] = Number(row.total);
     });
 
-    // 6. Proyectos Evaluados
+    // 6. Proyectos Evaluados (evaluaciones table)
     const proyectosEvaluadosData = await prisma.proyectos.findMany({
       where: {
-        calificaciones: { some: {} }
+        evaluaciones: { some: {} }
       },
       select: { id: true }
     });
@@ -64,14 +51,14 @@ export class AdminRepository {
     const todos_eventos = await prisma.eventos.findMany({
       include: {
         proyectos: {
-          include: { calificaciones: true }
+          include: { evaluaciones: true }
         }
       }
     });
 
     const eventos_stats = todos_eventos.map(evento => {
       const totalProyectos = evento.proyectos.length;
-      const evaluados = evento.proyectos.filter(p => p.calificaciones.length > 0).length;
+      const evaluados = evento.proyectos.filter(p => p.evaluaciones.length > 0).length;
       return {
         id: Number(evento.id),
         nombre: evento.nombre,
@@ -95,43 +82,39 @@ export class AdminRepository {
   }
 
   async getUserPreferences(userId: number) {
-    return prisma.dashboard_preferences.findMany({
+    // user_preferences - single row per user in new schema
+    const pref = await prisma.user_preferences.findUnique({
       where: { user_id: BigInt(userId) }
     });
+    if (pref && pref.settings) {
+      try {
+        const parsed = JSON.parse(pref.settings);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
   }
 
   async saveUserPreferences(userId: number, preferences: SaveDashboardPreferencesDto) {
-    const operations = preferences.widgets.map(async (w) => {
-      const existing = await prisma.dashboard_preferences.findFirst({
-        where: { user_id: BigInt(userId), widget_key: w.key }
-      });
-
-      if (existing) {
-        return prisma.dashboard_preferences.update({
-          where: { id: existing.id },
-          data: {
-            position: w.position,
-            is_visible: w.is_visible,
-            settings: w.settings ? JSON.stringify(w.settings) : undefined,
-            updated_at: new Date()
-          }
-        });
-      } else {
-        return prisma.dashboard_preferences.create({
-          data: {
-            user_id: BigInt(userId),
-            widget_key: w.key,
-            position: w.position,
-            is_visible: w.is_visible,
-            settings: w.settings ? JSON.stringify(w.settings) : undefined,
-            created_at: new Date(),
-            updated_at: new Date()
-          }
-        });
+    const settingsJson = JSON.stringify(preferences.widgets);
+    
+    // Upsert into user_preferences
+    await prisma.user_preferences.upsert({
+      where: { user_id: BigInt(userId) },
+      update: {
+        settings: settingsJson,
+        updated_at: new Date()
+      },
+      create: {
+        user_id: BigInt(userId),
+        settings: settingsJson,
+        created_at: new Date(),
+        updated_at: new Date()
       }
     });
-
-    await Promise.all(operations);
+    
     return true;
   }
 }

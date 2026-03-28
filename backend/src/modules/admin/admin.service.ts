@@ -20,38 +20,30 @@ export class AdminService {
       { key: 'chart_categorias', position: 8, is_visible: false, settings: { type: 'bar' } }
     ];
 
+    // Get user prefs (array of widget overrides)
     const userPrefs = await adminRepository.getUserPreferences(userId);
     const prefsMap: Record<string, any> = {};
     
-    userPrefs.forEach(p => { 
-      prefsMap[p.widget_key] = p; 
-    });
+    if (Array.isArray(userPrefs)) {
+      userPrefs.forEach((p: any) => {
+        if (p.key) prefsMap[p.key] = p;
+      });
+    }
 
     const widgets = defaultWidgets.map(def => {
       if (prefsMap[def.key]) {
         const pref = prefsMap[def.key];
-        let parsedSettings = def.settings;
-        try {
-          if (pref.settings && typeof pref.settings === 'string') {
-            parsedSettings = { ...def.settings, ...JSON.parse(pref.settings) };
-          } else if (pref.settings && typeof pref.settings === 'object') {
-            parsedSettings = { ...def.settings, ...pref.settings };
-          }
-        } catch (e) {
-          // Keep default if JSON unparseable
-        }
-
         return {
           key: def.key,
-          position: pref.position,
-          is_visible: Boolean(pref.is_visible),
-          settings: parsedSettings
+          position: pref.position ?? def.position,
+          is_visible: pref.is_visible ?? def.is_visible,
+          settings: { ...def.settings, ...(pref.settings || {}) }
         };
       }
       return def;
     }).sort((a, b) => a.position - b.position);
 
-    // Mock an anual timeline to ensure parity with Vue frontend visual expectations
+    // Mock annual timeline
     const pendientesAnual = {
       '2021': 12, '2022': 8, '2023': 15, '2024': 5, '2025': metrics.proyectosPendientes
     };

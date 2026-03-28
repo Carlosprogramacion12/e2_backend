@@ -28,7 +28,7 @@ export class ProyectoRepository {
       include: {
         equipos: true,
         eventos: true,
-        calificaciones: true
+        evaluaciones: true
       }
     });
   }

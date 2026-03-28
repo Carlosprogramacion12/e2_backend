@@ -1,5 +1,8 @@
 export interface CrearInvitacionDto {
-  participante_id: number;
+  user_id?: number;
+  participante_id?: number; // legacy compatibility
+  rol?: string;
   perfil_sugerido_id?: number;
   mensaje?: string;
 }
+

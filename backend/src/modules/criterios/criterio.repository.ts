@@ -3,38 +3,37 @@ import { CreateCriterioDto, UpdateCriterioDto } from './criterio.types';
 
 export class CriterioRepository {
   async findById(id: number) {
-    return prisma.criterio_evaluacion.findUnique({
+    return prisma.evaluacion_criterios.findUnique({
       where: { id: BigInt(id) },
-      include: { eventos: true },
+      include: { evento: true },
     });
   }
 
   async create(data: CreateCriterioDto) {
-    return prisma.criterio_evaluacion.create({
+    return prisma.evaluacion_criterios.create({
       data: {
         evento_id: BigInt(data.evento_id),
         nombre: data.nombre,
         ponderacion: data.ponderacion,
-        created_at: new Date(),
-        updated_at: new Date(),
       },
     });
   }
 
   async update(id: number, data: UpdateCriterioDto) {
-    const updateData: any = { updated_at: new Date() };
+    const updateData: any = {};
     if (data.nombre) updateData.nombre = data.nombre;
     if (data.ponderacion !== undefined) updateData.ponderacion = data.ponderacion;
 
-    return prisma.criterio_evaluacion.update({
+    return prisma.evaluacion_criterios.update({
       where: { id: BigInt(id) },
       data: updateData,
     });
   }
 
   async delete(id: number) {
-    return prisma.criterio_evaluacion.delete({
+    return prisma.evaluacion_criterios.delete({
       where: { id: BigInt(id) },
     });
   }
 }
+

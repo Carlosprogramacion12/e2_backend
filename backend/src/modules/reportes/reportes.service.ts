@@ -14,10 +14,6 @@ export class ReportesService {
 
   async generateUsuariosPdf(res: Response) {
     const usuarios = await prisma.users.findMany({
-      include: { 
-        user_rol: { include: { roles: true } },
-        participantes: { include: { carreras: true } }
-      },
       orderBy: { created_at: 'desc' }
     });
     PdfService.generarReporteUsuarios(res, usuarios);
@@ -26,12 +22,11 @@ export class ReportesService {
   async generateEquiposPdf(res: Response) {
     const equipos = await prisma.equipos.findMany({
       include: { 
-        equipo_participante: { include: { participantes: { include: { users: true } } } },
-        proyectos: { include: { eventos: true } }
+        miembros: { include: { user: true } },
+        proyectos: { include: { evento: true } }
       },
       orderBy: { created_at: 'desc' }
     });
-    // Adaptar para que PdfService reciba lo esperado (simplificando aquí)
     const data = equipos.map(e => ({
       ...e,
       proyecto: e.proyectos[0] || null
@@ -41,7 +36,7 @@ export class ReportesService {
 
   async generateEventosPdf(res: Response) {
     const eventos = await prisma.eventos.findMany({
-      include: { proyectos: true, criterio_evaluacion: true },
+      include: { proyectos: true, criterios: true },
       orderBy: { created_at: 'desc' }
     });
     PdfService.generarReporteEventos(res, eventos);
@@ -50,18 +45,19 @@ export class ReportesService {
   async generateProyectosPdf(res: Response) {
     const proyectos = await prisma.proyectos.findMany({
       include: { 
-        equipos: { include: { equipo_participante: { include: { participantes: { include: { users: true } } } } } },
-        eventos: true
+        equipo: { include: { miembros: { include: { user: true } } } },
+        evento: true
       },
       orderBy: { created_at: 'desc' }
     });
     const data = proyectos.map(p => ({
         ...p,
-        equipo: p.equipos,
-        evento: p.eventos
+        equipo: p.equipo,
+        evento: p.evento
     }));
     PdfService.generarReporteProyectos(res, data);
   }
 }
 
 export const reportesService = new ReportesService();
+

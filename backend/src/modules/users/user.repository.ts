@@ -15,24 +15,18 @@ export class UserRepository {
     }
 
     if (role) {
-      where.user_rol = {
-        some: {
-          roles: {
-            nombre: role
-          }
-        }
+      // New schema: role is an enum field on users
+      const roleMap: Record<string, string> = {
+        'Admin': 'ADMIN', 'Juez': 'JUEZ', 'Participante': 'PARTICIPANTE',
+        'ADMIN': 'ADMIN', 'JUEZ': 'JUEZ', 'PARTICIPANTE': 'PARTICIPANTE'
       };
+      where.role = roleMap[role] || role;
     }
 
     const [count, rows] = await Promise.all([
       prisma.users.count({ where }),
       prisma.users.findMany({
         where,
-        include: {
-          user_rol: {
-            include: { roles: true }
-          }
-        },
         orderBy: { created_at: 'desc' },
         skip: offset,
         take: limit
@@ -44,12 +38,7 @@ export class UserRepository {
 
   async findById(id: number) {
     return prisma.users.findUnique({
-      where: { id: BigInt(id) },
-      include: {
-        user_rol: {
-          include: { roles: true }
-        }
-      }
+      where: { id: BigInt(id) }
     });
   }
 
@@ -57,12 +46,13 @@ export class UserRepository {
     return prisma.users.findUnique({ where: { email } });
   }
 
-  async create(data: Omit<CreateUserDto, 'rol_id'>) {
+  async create(data: Omit<CreateUserDto, 'rol_id'> & { role?: string }) {
     return prisma.users.create({
       data: {
         name: data.nombre,
         email: data.email,
         password: data.password!,
+        role: (data.role || 'PARTICIPANTE') as any,
         created_at: new Date(),
         updated_at: new Date(),
       }
@@ -85,27 +75,14 @@ export class UserRepository {
     return prisma.users.delete({ where: { id: BigInt(id) } });
   }
 
-  async assignRole(userId: number, roleId: number) {
-    return prisma.user_rol.create({
-      data: {
-        user_id: BigInt(userId),
-        rol_id: BigInt(roleId)
-      }
-    });
-  }
-
-  async setRoles(userId: number, roleId: number) {
-    await prisma.user_rol.deleteMany({ where: { user_id: BigInt(userId) } });
-    return this.assignRole(userId, roleId);
-  }
-
-  async createParticipanteProfile(userId: number) {
-    return prisma.participantes.create({
-      data: {
-        user_id: BigInt(userId),
-        created_at: new Date(),
-        updated_at: new Date()
-      }
+  async setRole(userId: number, role: string) {
+    const roleMap: Record<number, string> = {
+      1: 'ADMIN', 2: 'JUEZ', 3: 'PARTICIPANTE'
+    };
+    const roleName = roleMap[Number(role)] || role;
+    return prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: { role: roleName as any }
     });
   }
 }

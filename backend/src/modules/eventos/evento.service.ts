@@ -32,20 +32,21 @@ export class EventoService {
       throw { status: 404, message: 'Evento no encontrado' };
     }
 
-    // Adapt to legacy output structure
     const formattedEvento = {
       ...evento,
       id: Number(evento.id),
-      criterios: evento.criterio_evaluacion.map((c) => ({
+      // Frontend expects criterio_evaluacion array
+      criterio_evaluacion: evento.evaluacion_criterios.map((c: any) => ({
         ...c,
         id: Number(c.id),
         evento_id: Number(c.evento_id),
         ponderacion: Number(c.ponderacion)
       })),
-      jueces: evento.evento_user.map((eu) => ({
-        id: Number(eu.users.id),
-        name: eu.users.name,
-        email: eu.users.email,
+      // Frontend expects jueces array
+      jueces: evento.evento_jueces.map((ej: any) => ({
+        id: Number(ej.users.id),
+        name: ej.users.name,
+        email: ej.users.email,
       })),
     };
 

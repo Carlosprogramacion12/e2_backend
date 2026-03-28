@@ -3,17 +3,20 @@ import { UpdateEquipoDto, AddMiembroDto, EquipoQueryOptions } from './equipo.typ
 
 const equipoRepository = new EquipoRepository();
 
+const ROL_MAP: Record<string, string> = {
+  'LIDER': 'Líder', 'PROGRAMADOR': 'Programador', 'DISENADOR': 'Diseñador', 'TESTER': 'Tester'
+};
+
 export class EquipoService {
   async getAllEquipos(options: EquipoQueryOptions) {
     const { count, rows } = await equipoRepository.findAllPaginated(options);
     const limit = options.limit || 10;
     const page = options.page || 1;
 
-    // Formatear igual al response Legacy Sequelize
-    const equiposFormateados = rows.map((e) => ({
+    const equiposFormateados = rows.map((e: any) => ({
       ...e,
       id: Number(e.id),
-      proyectos: undefined, // Remover del root
+      proyectos: undefined,
       proyecto: e.proyectos && e.proyectos.length > 0 ? {
         ...e.proyectos[0],
         id: Number(e.proyectos[0].id),
@@ -24,18 +27,19 @@ export class EquipoService {
           id: Number(e.proyectos[0].eventos.id)
         } : null,
       } : null,
-      participantes: e.equipo_participante.map((ep) => ({
-        ...ep.participantes,
-        id: Number(ep.participantes.id),
-        user_id: Number(ep.participantes.user_id),
-        carrera_id: Number(ep.participantes.carrera_id),
+      participantes: e.equipo_miembros.map((em: any) => ({
+        id: Number(em.users.id),
+        user_id: Number(em.users.id),
+        carrera_id: null,
         user: {
-          id: Number(ep.participantes.users.id),
-          name: ep.participantes.users.name,
-          email: ep.participantes.users.email,
+          id: Number(em.users.id),
+          name: em.users.name,
+          email: em.users.email,
         },
+        carrera: em.users.carrera ? { nombre: em.users.carrera } : null,
         equipo_participante: {
-          perfil_id: Number(ep.perfil_id)
+          perfil_id: em.rol === 'LIDER' ? 1 : em.rol === 'PROGRAMADOR' ? 2 : em.rol === 'DISENADOR' ? 3 : 4,
+          perfil: ROL_MAP[em.rol] || em.rol
         }
       }))
     }));
@@ -74,22 +78,19 @@ export class EquipoService {
           id: Number(equipo.proyectos[0].eventos.id)
         } : null,
       } : null,
-      participantes: equipo.equipo_participante.map((ep) => ({
-        ...ep.participantes,
-        id: Number(ep.participantes.id),
-        user_id: Number(ep.participantes.user_id),
-        carrera_id: Number(ep.participantes.carrera_id),
+      participantes: equipo.equipo_miembros.map((em: any) => ({
+        id: Number(em.users.id),
+        user_id: Number(em.users.id),
+        carrera_id: null,
         user: {
-          id: Number(ep.participantes.users.id),
-          name: ep.participantes.users.name,
-          email: ep.participantes.users.email,
+          id: Number(em.users.id),
+          name: em.users.name,
+          email: em.users.email,
         },
-        carrera: ep.participantes.carreras ? {
-          ...ep.participantes.carreras,
-          id: Number(ep.participantes.carreras.id)
-        } : null,
+        carrera: em.users.carrera ? { nombre: em.users.carrera } : null,
         equipo_participante: {
-          perfil_id: Number(ep.perfil_id) // Compatibility with legacy Vue code accessing `participante.equipo_participante.perfil_id`
+          perfil_id: em.rol === 'LIDER' ? 1 : em.rol === 'PROGRAMADOR' ? 2 : em.rol === 'DISENADOR' ? 3 : 4,
+          perfil: ROL_MAP[em.rol] || em.rol
         }
       }))
     };
@@ -121,8 +122,8 @@ export class EquipoService {
     return { success: true, message: 'Miembro agregado al equipo.' };
   }
 
-  async removeMember(equipoId: number, participanteId: number) {
-    await equipoRepository.removeMiembro(equipoId, participanteId);
+  async removeMember(equipoId: number, userId: number) {
+    await equipoRepository.removeMiembro(equipoId, userId);
     return { success: true, message: 'Miembro eliminado del equipo.' };
   }
 }

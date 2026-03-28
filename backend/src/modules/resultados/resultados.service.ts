@@ -49,18 +49,14 @@ export class ResultadosService {
     const proyecto = await prisma.proyectos.findUnique({
       where: { id: BigInt(proyectoId) },
       include: {
-        equipos: {
+        equipo: {
           include: {
-            equipo_participante: {
-              include: {
-                participantes: {
-                  include: { users: true }
-                }
-              }
+            miembros: {
+              include: { user: true }
             }
           }
         },
-        eventos: true
+        evento: true
       }
     });
 
@@ -68,7 +64,6 @@ export class ResultadosService {
 
     const textoLogro = rankingService.getTextoLogro(posicion);
 
-    // Format for PDF generation compatibility in phase 6
     const formatData = {
       proyecto: {
         ...proyecto,
@@ -77,14 +72,15 @@ export class ResultadosService {
         equipo_id: Number(proyecto.equipo_id)
       },
       textoLogro,
-      nombreTitular: proyecto.equipos ? proyecto.equipos.nombre : 'Sin equipo',
+      nombreTitular: proyecto.equipo ? proyecto.equipo.nombre : 'Sin equipo',
       mostrarIntegrantes: true,
-      evento: proyecto.eventos ? {
-        ...proyecto.eventos,
-        id: Number(proyecto.eventos.id)
+      evento: proyecto.evento ? {
+        ...proyecto.evento,
+        id: Number(proyecto.evento.id)
       } : null
     };
 
     return formatData;
   }
 }
+

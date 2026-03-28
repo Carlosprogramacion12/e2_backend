@@ -56,13 +56,13 @@ export class PdfService {
     doc.text(`con el proyecto "${payload.proyecto.nombre}"`, { align: 'center' });
 
     // ─── Integrantes ───
-    if (payload.mostrarIntegrantes && payload.proyecto.equipo && payload.proyecto.equipo.participantes) {
+    if (payload.mostrarIntegrantes && payload.proyecto.equipo && payload.proyecto.equipo.miembros) {
       doc.moveDown(1);
       doc.fontSize(11).fillColor('#555').font('Helvetica-Bold').text('Integrantes del equipo:', { align: 'center' });
       doc.moveDown(0.3);
       doc.font('Helvetica').fontSize(10).fillColor('#444');
-      payload.proyecto.equipo.participantes.forEach((p: any) => {
-        const nombre = p.users ? p.users.name : `Participante #${p.id}`;
+      payload.proyecto.equipo.miembros.forEach((m: any) => {
+        const nombre = m.user ? m.user.name : `Miembro #${m.id}`;
         doc.text(`• ${nombre}`, { align: 'center' });
       });
     }
@@ -157,42 +157,42 @@ export class PdfService {
   }
 
   static generarReporteUsuarios(res: Response, usuarios: any[]) {
-    const doc = new PDFDocument({ size: 'A4', portrait: true, margins: { top: 50, bottom: 50, left: 50, right: 50 } });
+    const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margins: { top: 50, bottom: 50, left: 50, right: 50 } });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Reporte_Usuarios_${new Date().toISOString().split('T')[0]}.pdf"`);
     doc.pipe(res);
 
     doc.fontSize(20).fillColor('#1a237e').font('Helvetica-Bold').text('Reporte General de Usuarios', { align: 'center' });
     doc.moveDown(1);
-    usuarios.forEach((u, i) => {
+    usuarios.forEach((u: any, i: number) => {
       doc.fontSize(12).fillColor('#333').font('Helvetica-Bold').text(`${i+1}. ${u.name}`);
       doc.fontSize(10).font('Helvetica').text(`Email: ${u.email}`);
-      const roles = u.user_rol?.map((ur: any) => ur.roles?.nombre).join(', ') || 'Sin rol';
-      doc.text(`Roles: ${roles}`);
+      doc.text(`Rol: ${u.role || 'Sin rol'}`);
+      if (u.carrera) doc.text(`Carrera: ${u.carrera}`);
       doc.moveDown(0.5);
     });
     doc.end();
   }
 
   static generarReporteEquipos(res: Response, equipos: any[]) {
-    const doc = new PDFDocument({ size: 'A4', portrait: true, margins: { top: 50, bottom: 50, left: 50, right: 50 } });
+    const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margins: { top: 50, bottom: 50, left: 50, right: 50 } });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Reporte_Equipos_${new Date().toISOString().split('T')[0]}.pdf"`);
     doc.pipe(res);
 
     doc.fontSize(20).fillColor('#1a237e').font('Helvetica-Bold').text('Reporte de Equipos', { align: 'center' });
     doc.moveDown(1);
-    equipos.forEach((e, i) => {
+    equipos.forEach((e: any, i: number) => {
       doc.fontSize(12).fillColor('#333').font('Helvetica-Bold').text(`${i+1}. ${e.nombre}`);
       doc.fontSize(10).font('Helvetica').text(`Proyecto: ${e.proyecto?.nombre || 'N/A'}`);
-      doc.text(`Integrantes: ${e.equipo_participante?.length || 0}`);
+      doc.text(`Integrantes: ${e.miembros?.length || 0}`);
       doc.moveDown(0.5);
     });
     doc.end();
   }
 
   static generarReporteEventos(res: Response, eventos: any[]) {
-    const doc = new PDFDocument({ size: 'A4', portrait: true, margins: { top: 50, bottom: 50, left: 50, right: 50 } });
+    const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margins: { top: 50, bottom: 50, left: 50, right: 50 } });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Reporte_Eventos_${new Date().toISOString().split('T')[0]}.pdf"`);
     doc.pipe(res);
@@ -209,7 +209,7 @@ export class PdfService {
   }
 
   static generarReporteProyectos(res: Response, proyectos: any[]) {
-    const doc = new PDFDocument({ size: 'A4', portrait: true, margins: { top: 50, bottom: 50, left: 50, right: 50 } });
+    const doc = new PDFDocument({ size: 'A4', layout: 'portrait', margins: { top: 50, bottom: 50, left: 50, right: 50 } });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Reporte_Proyectos_${new Date().toISOString().split('T')[0]}.pdf"`);
     doc.pipe(res);
