@@ -28,6 +28,7 @@ const carrerasDisponibles = [
   'Ingeniería Electrónica',
   'Ingeniería Química',
   'Ingeniería Industrial',
+  'Ingeniería Civil',
   'Ingeniería en Gestión Empresarial',
   'Licenciatura en Administración',
   'Contador Público'

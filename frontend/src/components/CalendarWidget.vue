@@ -6,8 +6,12 @@
       <div class="calendar-controls">
         <button class="btn-today" @click="goToday">Hoy</button>
         <div class="divider"></div>
-        <button class="btn-nav" @click="goPrev"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
-        <button class="btn-nav" @click="goNext"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+        <button class="btn-nav" @click="goPrev">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <button class="btn-nav" @click="goNext">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
         <div class="divider"></div>
         <select v-model="viewMode" class="view-selector">
           <option value="month">Vista Mensual</option>
@@ -167,8 +171,18 @@ const monthCells = computed(() => {
 .calendar-controls { display: flex; align-items: center; gap: .5rem; background: var(--card-muted, #24303f); padding: .25rem; border-radius: .75rem; border: 1px solid var(--border, #374151); }
 .btn-today { padding: .375rem 1rem; font-size: .875rem; font-weight: 700; color: var(--text-secondary); background: transparent; border: none; border-radius: .5rem; cursor: pointer; transition: all .2s; }
 .btn-today:hover { background: var(--bg-hover, #374151); }
-.btn-nav { padding: .375rem; background: transparent; border: none; color: var(--text-muted); cursor: pointer; border-radius: .5rem; }
-.btn-nav:hover { background: var(--bg-hover, #374151); }
+.btn-nav { 
+  padding: .375rem; 
+  background: transparent; 
+  border: none; 
+  color: #6b7280; 
+  cursor: pointer; 
+  border-radius: .5rem; 
+  transition: all .2s; 
+}
+.dark .btn-nav { color: #9ca3af; }
+.btn-nav:hover { background: #fff; color: #374151; }
+.dark .btn-nav:hover { background: #4b5563; color: #f3f4f6; }
 .divider { width: 1px; height: 1.5rem; background: var(--border, #374151); }
 .view-selector { background: transparent; border: none; font-size: .875rem; font-weight: 700; color: var(--text-primary); cursor: pointer; padding: .375rem; outline: none; }
 .view-selector option { color: #000; }
