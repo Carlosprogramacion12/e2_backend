@@ -3,9 +3,9 @@
     <div v-if="loading" class="loading"><div class="spinner"></div></div>
     <template v-else>
       <!-- Header Actions -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;position:relative;z-index:30">
         <h2 style="font-size:1.25rem;font-weight:600;color:var(--text-primary)">Dashboard</h2>
-        <div style="display:flex;gap:0.75rem">
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-shrink:0">
           <a :href="apiBase + '/admin/dashboard/report'" target="_blank" class="btn btn-indigo btn-sm">
             <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Generar Reporte PDF

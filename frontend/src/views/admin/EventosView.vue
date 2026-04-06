@@ -9,10 +9,10 @@
     <!-- Calendar Widget -->
     <CalendarWidget :eventos="eventos">
       <template #actions>
-        <button class="btn btn-indigo" @click="showModal=true">
+        <router-link to="/admin/eventos/crear" class="btn btn-indigo" style="text-decoration:none">
           <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
           Agregar Evento
-        </button>
+        </router-link>
       </template>
     </CalendarWidget>
 
@@ -20,7 +20,7 @@
     <div class="table-container" style="margin-top:2rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
         <h3 style="font-size:1.125rem;font-weight:700">Listado de Eventos</h3>
-        <button class="btn btn-indigo" @click="showModal=true"><span>+</span> Agregar evento</button>
+        <router-link to="/admin/eventos/crear" class="btn btn-indigo" style="text-decoration:none"><span>+</span> Agregar evento</router-link>
       </div>
 
       <div v-if="loading" class="loading"><div class="spinner"></div></div>
@@ -64,12 +64,18 @@
               </span>
             </td>
             <td style="text-align:right">
-              <div style="display:flex;justify-content:flex-end;gap:.5rem">
-                <button class="action-icon" @click="edit(e)" title="Editar">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                </button>
-                <button class="action-icon danger" @click="del(e.id)" title="Eliminar">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <div style="display:flex;justify-content:flex-end;align-items:center;gap:.5rem">
+                <!-- Ver Detalles -->
+                <router-link :to="'/admin/eventos/' + e.id" style="padding:.5rem;border-radius:.5rem;color:#2563eb;transition:background-color .2s" class="hover:bg-blue-50 dark:hover:bg-blue-900/30" title="Ver detalles">
+                  <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </router-link>
+                <!-- Editar -->
+                <router-link :to="'/admin/eventos/' + e.id + '/editar'" style="padding:.5rem;border-radius:.5rem;color:#4f46e5;transition:background-color .2s" class="hover:bg-indigo-50 dark:hover:bg-indigo-900/30" title="Editar">
+                  <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </router-link>
+                <!-- Eliminar -->
+                <button @click="del(e.id)" style="padding:.5rem;border-radius:.5rem;color:#dc2626;background:transparent;border:none;cursor:pointer;transition:background-color .2s" class="hover:bg-red-50 dark:hover:bg-red-900/30" title="Eliminar">
+                  <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
               </div>
             </td>
@@ -78,21 +84,6 @@
       </table>
     </div>
 
-    <!-- Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content" style="max-width:32rem">
-        <div class="modal-header">{{ editing?'Editar':'Nuevo' }} Evento <button class="modal-close" @click="close">✕</button></div>
-        <div class="modal-body"><form @submit.prevent="save">
-          <div class="form-group"><label>Nombre</label><input v-model="form.nombre" class="form-control" required></div>
-          <div class="form-group"><label>Descripción</label><textarea v-model="form.descripcion" class="form-control"></textarea></div>
-          <div style="display:flex;gap:1rem">
-            <div class="form-group" style="flex:1"><label>Fecha Inicio</label><input v-model="form.fecha_inicio" type="date" class="form-control" required></div>
-            <div class="form-group" style="flex:1"><label>Fecha Fin</label><input v-model="form.fecha_fin" type="date" class="form-control" required></div>
-          </div>
-          <button type="submit" class="btn btn-indigo btn-block">{{ editing?'Actualizar':'Crear' }}</button>
-        </form></div>
-      </div>
-    </div>
   </AppLayout>
 </template>
 
@@ -107,7 +98,6 @@ const loading = ref(true)
 const showModal = ref(false)
 const editing = ref(null)
 const msg = ref('')
-const form = ref({ nombre: '', descripcion: '', fecha_inicio: '', fecha_fin: '' })
 
 const fmtFull = d => d ? new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'
 
@@ -120,11 +110,11 @@ function getStatus(e) {
   return 'finished'
 }
 
-async function fetchEventos() {
+async function fetch() {
   loading.value = true
   try {
-    const r = await api.get('/admin/eventos')
-    eventos.value = r.data.data.eventos || r.data.data || []
+    const res = await api.get('/admin/eventos')
+    eventos.value = res.data.data.eventos || res.data.data || []
   } catch (e) {
     console.error(e)
   } finally {
@@ -132,49 +122,17 @@ async function fetchEventos() {
   }
 }
 
-function edit(e) {
-  editing.value = e
-  form.value = {
-    nombre: e.nombre,
-    descripcion: e.descripcion || '',
-    fecha_inicio: e.fecha_inicio?.split('T')[0] || '',
-    fecha_fin: e.fecha_fin?.split('T')[0] || ''
-  }
-  showModal.value = true
-}
-
-function close() {
-  showModal.value = false
-  editing.value = null
-  form.value = { nombre: '', descripcion: '', fecha_inicio: '', fecha_fin: '' }
-}
-
-async function save() {
-  try {
-    if (editing.value) await api.put(`/admin/eventos/${editing.value.id}`, form.value)
-    else await api.post('/admin/eventos', form.value)
-    close()
-    msg.value = 'Evento guardado.'
-    fetchEventos()
-    setTimeout(() => msg.value = '', 3000)
-  } catch (e) {
-    alert(e.response?.data?.message || 'Error')
-  }
-}
-
 async function del(id) {
-  if (!confirm('¿Eliminar este evento?')) return
+  if(!confirm('¿Estás seguro?')) return
   try {
     await api.delete(`/admin/eventos/${id}`)
-    msg.value = 'Evento eliminado.'
-    fetchEventos()
-    setTimeout(() => msg.value = '', 3000)
-  } catch (e) {
-    alert('Error')
-  }
+    msg.value = 'Evento eliminado'
+    setTimeout(() => msg.value='',3000)
+    fetch()
+  } catch(e) { console.error(e) }
 }
 
-onMounted(fetchEventos)
+onMounted(fetch)
 </script>
 
 <style scoped>
