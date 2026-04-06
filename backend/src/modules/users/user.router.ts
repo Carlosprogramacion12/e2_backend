@@ -61,6 +61,46 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
   }
 });
 
+// ─── EXPORTAR A EXCEL ───
+router.get('/exportar', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const search = req.query.search as string;
+    const role = req.query.role as string;
+    const result = await userService.getAllUsers({ search, role, page: 1, limit: 99999 });
+    const usuarios = result.data.usuarios;
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Usuarios');
+
+    sheet.columns = [
+      { header: 'Nombre', key: 'name', width: 30 },
+      { header: 'Email', key: 'email', width: 35 },
+      { header: 'Rol', key: 'rol', width: 15 },
+      { header: 'Fecha de Registro', key: 'created_at', width: 22 }
+    ];
+
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+
+    usuarios.forEach((u: any) => {
+      sheet.addRow({
+        name: u.name,
+        email: u.email,
+        rol: u.roles?.[0]?.nombre || 'Sin rol',
+        created_at: u.created_at ? new Date(u.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * @openapi
  * /api/admin/usuarios:

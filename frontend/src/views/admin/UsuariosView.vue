@@ -4,6 +4,10 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
       <h2 style="font-size:1.5rem;font-weight:700">Gestión de Usuarios</h2>
       <div style="display:flex;gap:.75rem">
+        <button class="btn btn-green" @click="exportToExcel">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          Exportar a Excel
+        </button>
         <button class="btn btn-indigo" @click="openModal()">
           <span>+</span> Nuevo Usuario
         </button>
@@ -176,6 +180,29 @@ function confirmDelete(u) { deletingUser.value = u; showDeleteModal.value = true
 async function deleteUser() {
   try { await api.delete(`/admin/usuarios/${deletingUser.value.id}`); showDeleteModal.value = false; successMsg.value = 'Usuario eliminado.'; fetchUsuarios(); setTimeout(() => successMsg.value = '', 3000) }
   catch (e) { alert(e.response?.data?.message || 'Error') }
+}
+
+async function exportToExcel() {
+  try {
+    const params = new URLSearchParams()
+    if (search.value) params.append('search', search.value)
+    if (roleFilter.value) params.append('role', roleFilter.value)
+    const token = localStorage.getItem('token')
+    const response = await fetch(`/api/admin/usuarios/exportar?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Usuarios_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    alert('Error al exportar')
+  }
 }
 
 onMounted(fetchUsuarios)
