@@ -61,39 +61,108 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
   }
 });
 
-// ─── EXPORTAR A EXCEL ───
+// ─── EXPORTAR A EXCEL (igual que Laravel) ───
 router.get('/exportar', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const search = req.query.search as string;
     const role = req.query.role as string;
-    const result = await userService.getAllUsers({ search, role, page: 1, limit: 99999 });
-    const usuarios = result.data.usuarios;
+
+    // Build where clause
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } }
+      ];
+    }
+    if (role) {
+      const roleMap: Record<string, string> = {
+        'Admin': 'ADMIN', 'Juez': 'JUEZ', 'Participante': 'PARTICIPANTE',
+        'ADMIN': 'ADMIN', 'JUEZ': 'JUEZ', 'PARTICIPANTE': 'PARTICIPANTE'
+      };
+      where.role = roleMap[role] || role;
+    }
+
+    // Fetch ALL users (no pagination for export)
+    const prisma = (await import('../../utils/prisma')).default;
+    const usuarios = await prisma.users.findMany({
+      where,
+      orderBy: { created_at: 'desc' }
+    });
 
     const ExcelJS = require('exceljs');
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Usuarios');
 
+    // Laravel-matching columns: ID, Nombre, Email, Rol(es), Email Verificado, Fecha de Registro, No. Control, Carrera, Teléfono
     sheet.columns = [
-      { header: 'Nombre', key: 'name', width: 30 },
-      { header: 'Email', key: 'email', width: 35 },
-      { header: 'Rol', key: 'rol', width: 15 },
-      { header: 'Fecha de Registro', key: 'created_at', width: 22 }
+      { header: 'ID',                key: 'id',               width: 8  },
+      { header: 'Nombre',            key: 'nombre',           width: 30 },
+      { header: 'Email',             key: 'email',            width: 35 },
+      { header: 'Rol(es)',           key: 'roles',            width: 18 },
+      { header: 'Email Verificado',  key: 'email_verificado', width: 18 },
+      { header: 'Fecha de Registro', key: 'fecha_registro',   width: 22 },
+      { header: 'No. Control',       key: 'no_control',       width: 16 },
+      { header: 'Carrera',           key: 'carrera',          width: 30 },
+      { header: 'Teléfono',          key: 'telefono',         width: 16 },
     ];
 
-    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
-    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+    // Header row styling (indigo background, white bold text) — matching Laravel
+    const headerRow = sheet.getRow(1);
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4F46E5' }  // Indigo-600
+    };
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 28;
 
-    usuarios.forEach((u: any) => {
+    // Role mapping
+    const ROLE_NAME_MAP: Record<string, string> = {
+      'ADMIN': 'Admin', 'JUEZ': 'Juez', 'PARTICIPANTE': 'Participante'
+    };
+
+    // Add data rows
+    for (const u of usuarios) {
+      const roleName = ROLE_NAME_MAP[(u as any).role] || 'Participante';
       sheet.addRow({
-        name: u.name,
+        id: Number(u.id),
+        nombre: u.name,
         email: u.email,
-        rol: u.roles?.[0]?.nombre || 'Sin rol',
-        created_at: u.created_at ? new Date(u.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+        roles: roleName,
+        email_verificado: 'No',  // No email verification in new system
+        fecha_registro: u.created_at
+          ? new Date(u.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+            new Date(u.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+          : '-',
+        no_control: (u as any).no_control || 'N/A',
+        carrera: (u as any).carrera || 'N/A',
+        telefono: (u as any).telefono || 'N/A',
+      });
+    }
+
+    // Auto-fit and add borders to data rows
+    sheet.eachRow((row: any, rowNumber: number) => {
+      if (rowNumber > 1) {
+        row.alignment = { vertical: 'middle' };
+      }
+      row.eachCell((cell: any) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+        };
       });
     });
 
+    // Send response
+    const now = new Date();
+    const filename = `usuarios_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}.xlsx`;
+    
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=Usuarios_${new Date().toISOString().split('T')[0]}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {

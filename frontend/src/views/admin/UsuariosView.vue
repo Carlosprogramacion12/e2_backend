@@ -219,14 +219,23 @@ async function exportToExcel() {
     const res = await api.get(`/admin/usuarios/exportar?${params.toString()}`, { 
       responseType: 'blob' 
     })
+
+    // Extract filename from Content-Disposition header or use fallback
+    const disposition = res.headers['content-disposition'] || ''
+    const filenameMatch = disposition.match(/filename=(.+?)(?:;|$)/)
+    const now = new Date()
+    const pad = (n) => String(n).padStart(2, '0')
+    const fallbackName = `usuarios_${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.xlsx`
+    const filename = filenameMatch ? filenameMatch[1] : fallbackName
     
     const url = window.URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `usuarios_${new Date().getTime()}.xlsx`)
+    link.setAttribute('download', filename)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
   } catch (err) {
     console.error('Error exporting to Excel:', err)
     alert('Error al exportar los datos')
