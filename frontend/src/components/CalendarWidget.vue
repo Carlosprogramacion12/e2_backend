@@ -35,7 +35,9 @@
           <div v-for="day in getDaysInMonth(currentDate.getFullYear(), mIndex)" :key="'d'+day" 
                class="mini-day" 
                :class="getDayClass(currentDate.getFullYear(), mIndex, day)"
-               @click="goToMonth(mIndex, day)">
+               @click="goToMonth(mIndex, day)"
+               @mouseenter="e => { const evs = getEventsForDay(currentDate.getFullYear(), mIndex, day); if(evs.length) showTooltip(e, evs[0]) }"
+               @mouseleave="hideTooltip">
             {{ day }}
           </div>
         </div>
@@ -50,10 +52,23 @@
       <div class="month-grid">
         <div v-for="cell in monthCells" :key="cell.id" class="month-cell" :class="{ 'cell-gray': cell.isGray }">
           <div class="date-num" :class="{ 'is-today': cell.isToday }">{{ cell.day }}</div>
-          <div v-for="ev in cell.events" :key="ev.id" class="event-pill" :class="ev.statusClass" :title="ev.nombre">
+          <div v-for="ev in cell.events" :key="ev.id" class="event-pill" :class="ev.statusClass" 
+               @click.stop="$router?.push(`/admin/eventos/${ev.id}`)"
+               @mouseenter="e => showTooltip(e, ev)" @mouseleave="hideTooltip">
             {{ ev.nombre }}
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- TOOLTIP -->
+    <div v-show="tooltipData" class="event-tooltip" :style="{ left: tooltipPos.x + 'px', top: tooltipPos.y + 'px' }">
+      <div v-if="tooltipData">
+        <div class="tooltip-header">
+          <div class="tooltip-dot"></div>
+          <h4 class="tooltip-title">{{ tooltipData.nombre }}</h4>
+        </div>
+        <p class="tooltip-desc">{{ tooltipData.descripcion || 'Sin descripción' }}</p>
       </div>
     </div>
   </div>
@@ -70,6 +85,26 @@ const viewMode = ref('year')
 const currentDate = ref(new Date())
 const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 const dayInitials = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+
+// Tooltip state
+const tooltipData = ref(null)
+const tooltipPos = ref({ x: 0, y: 0 })
+let tooltipTimeout = null
+
+const showTooltip = (e, ev) => {
+  clearTimeout(tooltipTimeout)
+  tooltipData.value = ev
+  const rect = e.target.getBoundingClientRect()
+  let left = rect.left
+  if (left + 256 > window.innerWidth) left = window.innerWidth - 270
+  tooltipPos.value = { x: left, y: rect.bottom + 10 }
+}
+
+const hideTooltip = () => {
+  tooltipTimeout = setTimeout(() => {
+    tooltipData.value = null
+  }, 300)
+}
 
 const goToday = () => { currentDate.value = new Date() }
 const goPrev = () => {
@@ -219,4 +254,57 @@ const monthCells = computed(() => {
 .ev-future { background: rgba(59,130,246,.2); color: #60a5fa; }
 .ev-past { background: rgba(107,114,128,.2); color: #9ca3af; }
 .ev-active { background: rgba(79,70,229,.3); color: #a5b4fc; border-left: 2px solid #4f46e5; }
+
+/* TOOLTIP STYLES */
+.event-tooltip {
+  position: fixed;
+  z-index: 50;
+  width: 16rem;
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+.dark .event-tooltip {
+  background: #24303f;
+  border-color: #4b5563;
+}
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.tooltip-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #6366f1;
+}
+.tooltip-title {
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.875rem;
+  margin: 0;
+}
+.dark .tooltip-title {
+  color: #fff;
+}
+.tooltip-desc {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.625;
+}
+.dark .tooltip-desc {
+  color: #9ca3af;
+}
 </style>
