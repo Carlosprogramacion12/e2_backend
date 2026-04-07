@@ -77,6 +77,13 @@
                     Reportes
                   </router-link>
                 </li>
+                <li><p class="nav-section-label">Cuenta</p></li>
+                <li>
+                  <router-link to="/admin/mi-perfil" class="nav-link" :class="{ active: $route.path.includes('/admin/mi-perfil') }">
+                    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Mi Perfil
+                  </router-link>
+                </li>
               </template>
 
               <!-- Juez Links -->
@@ -141,6 +148,10 @@
                   <svg :class="{ 'rotate-180': dropdownOpen }" class="dropdown-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                 </button>
                 <div v-show="dropdownOpen" class="user-dropdown-menu" @click.stop>
+                  <router-link to="/admin/mi-perfil" class="dropdown-profile-btn" @click="dropdownOpen = false">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Mi Perfil
+                  </router-link>
                   <button @click="handleLogout" class="dropdown-logout-btn">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
                     Cerrar Sesión

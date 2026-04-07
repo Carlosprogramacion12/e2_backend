@@ -25,6 +25,7 @@ const routes = [
   { path: '/admin/carreras', name: 'Carreras', component: () => import('../views/admin/CarrerasView.vue'), meta: { role: 'Admin' } },
   { path: '/admin/perfiles', name: 'Perfiles', component: () => import('../views/admin/PerfilesView.vue'), meta: { role: 'Admin' } },
   { path: '/admin/reportes', name: 'Reportes', component: () => import('../views/admin/ReportesView.vue'), meta: { role: 'Admin' } },
+  { path: '/admin/mi-perfil', name: 'AdminMiPerfil', component: () => import('../views/admin/MiPerfilView.vue'), meta: { role: 'Admin' } },
   // Juez
   { path: '/juez/dashboard', name: 'JuezDashboard', component: () => import('../views/juez/DashboardView.vue'), meta: { role: 'Juez' } },
   { path: '/juez/evaluar/:proyectoId', name: 'Evaluacion', component: () => import('../views/juez/EvaluacionView.vue'), meta: { role: 'Juez' } },

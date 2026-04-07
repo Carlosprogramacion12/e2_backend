@@ -60,7 +60,13 @@
           <tr v-for="u in usuarios" :key="u.id">
             <td style="padding-left:2rem">
               <div style="display:flex;align-items:center;gap:1rem">
-                <div class="user-avatar-sm">{{ (u.name || u.email || '?')[0].toUpperCase() }}</div>
+                <div class="user-avatar-sm">
+                  <img v-if="!failedAvatars[u.id]"
+                       :src="`/uploads/avatars/${u.id}.jpg?v=${avatarVersion}`" 
+                       alt="" class="user-avatar-img" 
+                       @error="onAvatarError(u.id)" />
+                  <span v-else class="user-avatar-initials">{{ (u.name || u.email || '?')[0].toUpperCase() }}</span>
+                </div>
                 <div>
                   <h5 style="font-weight:600;color:var(--text-primary);margin:0">{{ u.name }}</h5>
                   <p style="font-size:.875rem;color:var(--text-muted);margin:0">{{ u.email }}</p>
@@ -107,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import api from '../../services/api'
@@ -121,6 +127,12 @@ const search = ref('')
 const roleFilter = ref('')
 const page = ref(1)
 const successMsg = ref('')
+const failedAvatars = reactive({})
+const avatarVersion = ref(Date.now())
+
+function onAvatarError(userId) {
+  failedAvatars[userId] = true
+}
 
 const pagination = ref({
   total: 0,

@@ -169,7 +169,82 @@ export class AuthService {
         carrera: (user as any).carrera || null,
         no_control: (user as any).no_control || null,
         telefono: (user as any).telefono || null,
+        created_at: user.created_at,
       },
+    };
+  }
+
+  async updateProfile(userId: number, data: { name: string; email: string }) {
+    const user = await authRepository.findUserById(userId);
+    if (!user) {
+      throw { status: 404, message: 'Usuario no encontrado' };
+    }
+
+    // Check if email is already taken by another user
+    if (data.email && data.email !== user.email) {
+      const existing = await authRepository.findUserByEmail(data.email);
+      if (existing && Number(existing.id) !== userId) {
+        throw { status: 400, message: 'El email ya está en uso por otro usuario' };
+      }
+    }
+
+    const updated = await prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: {
+        name: data.name || user.name,
+        email: data.email || user.email,
+        updated_at: new Date(),
+      },
+    });
+
+    const roles = await getUserRoles(updated);
+
+    return {
+      success: true,
+      message: 'Perfil actualizado correctamente',
+      data: {
+        id: Number(updated.id),
+        name: updated.name,
+        email: updated.email,
+        roles,
+      },
+    };
+  }
+
+  async updatePassword(userId: number, data: { current_password: string; password: string; password_confirmation: string }) {
+    const user = await authRepository.findUserById(userId);
+    if (!user) {
+      throw { status: 404, message: 'Usuario no encontrado' };
+    }
+
+    // Validate current password
+    const isValid = await bcrypt.compare(data.current_password, user.password);
+    if (!isValid) {
+      throw { status: 400, message: 'La contraseña actual es incorrecta' };
+    }
+
+    // Validate confirmation
+    if (data.password !== data.password_confirmation) {
+      throw { status: 400, message: 'Las contraseñas no coinciden' };
+    }
+
+    if (data.password.length < 8) {
+      throw { status: 400, message: 'La contraseña debe tener al menos 8 caracteres' };
+    }
+
+    const hashed = await bcrypt.hash(data.password, 12);
+
+    await prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: {
+        password: hashed,
+        updated_at: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente',
     };
   }
 }

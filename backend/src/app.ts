@@ -38,9 +38,14 @@ import { constanciaRouter } from './modules/constancias/constancias.router';
 import { reportesRouter } from './modules/reportes/reportes.router';
 import { participanteDashboardRouter } from './modules/participante/participante.router';
 
+import path from 'path';
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
+
+// Serve uploaded files (avatars, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Root route for API health check
 app.get('/', (req, res) => {

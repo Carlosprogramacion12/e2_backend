@@ -169,6 +169,15 @@ body { font-family: var(--font); -webkit-font-smoothing: antialiased; }
 .dropdown-logout-btn:hover { color: #dc2626; background: #f9fafb; }
 .dark .dropdown-logout-btn { color: #d1d5db; }
 .dark .dropdown-logout-btn:hover { color: #f87171; background: #374151; }
+.dropdown-profile-btn {
+  display: flex; align-items: center; gap: .875rem; width: 100%;
+  padding: 1rem 1.5rem; background: none; border: none; cursor: pointer;
+  font-size: .875rem; font-weight: 500; color: #4b5563;
+  transition: all .3s; text-decoration: none;
+}
+.dropdown-profile-btn:hover { color: #4f46e5; background: #f9fafb; }
+.dark .dropdown-profile-btn { color: #d1d5db; }
+.dark .dropdown-profile-btn:hover { color: #818cf8; background: #374151; }
 
 /* ─── Content ─── */
 .content-wrapper { max-width: 1536px; margin: 0 auto; padding: 1rem 1.5rem; }
@@ -360,8 +369,14 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   width: 2.5rem; height: 2.5rem; border-radius: 50%;
   background: #eef2ff; display: flex; align-items: center; justify-content: center;
   color: #4f46e5; font-weight: 700; font-size: 1rem; flex-shrink: 0;
+  overflow: hidden; position: relative;
 }
 .dark .user-avatar-sm { background: rgba(79,70,229,.2); color: #818cf8; }
+.user-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.user-avatar-initials {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1rem;
+}
 
 /* ─── Action icons (match Laravel hover) ─── */
 .action-icon {
@@ -550,11 +565,12 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .pagination button.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 .pagination button:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ─── User avatar in table ─── */
+/* ─── User avatar in table (duplicate kept in sync) ─── */
 .user-avatar-sm {
   width: 2.5rem; height: 2.5rem; border-radius: 50%;
   background: #eef2ff; display: flex; align-items: center; justify-content: center;
   color: #4f46e5; font-weight: 700; font-size: 1rem; flex-shrink: 0;
+  overflow: hidden; position: relative;
 }
 .dark .user-avatar-sm { background: rgba(79,70,229,.2); color: #818cf8; }
 
