@@ -10,38 +10,54 @@
         <span style="color:#4f46e5;font-weight:600">Perfiles</span>
       </nav>
     </div>
+
     <div class="card">
-      <div class="card-header">
-        <span>Gestión de Perfiles Directivos</span>
-        <button @click="openModal()" class="btn btn-indigo btn-sm">
-          <PlusIcon class="w-4 h-4 mr-1" /> Nuevo Perfil
+      <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+        <div style="position:relative;width:100%;max-width:300px">
+          <div style="position:absolute;top:50%;left:10px;transform:translateY(-50%);pointer-events:none">
+            <SearchIcon class="w-5 h-5" style="color:#9ca3af" />
+          </div>
+          <input v-model="searchQuery" type="text" class="form-control" placeholder="Buscar perfil..." style="padding-left:2.5rem;width:100%;">
+        </div>
+
+        <button @click="openModal()" class="btn btn-indigo">
+          <PlusIcon class="w-4 h-4" /> Nuevo Perfil
         </button>
       </div>
       <div class="card-body">
         <div v-if="loading" class="loading"><div class="spinner"></div></div>
-        <div v-else-if="perfiles.length === 0" class="empty-state">
+        <div v-else-if="filteredPerfiles.length === 0" class="empty-state">
           <p>No se encontraron perfiles registrados.</p>
         </div>
         <div v-else class="table-container" style="padding:0;border:none;box-shadow:none">
           <table>
-            <thead>
+            <thead style="background:#f9fafb">
               <tr>
-                <th>ID</th>
-                <th>Nombre del Perfil</th>
-                <th>Acciones</th>
+                <th style="padding-left:2rem">Nombre del Perfil</th>
+                <th>Fecha Creación</th>
+                <th style="text-align:right;padding-right:2rem">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="perfil in perfiles" :key="perfil.id">
-                <td>#{{ perfil.id }}</td>
-                <td class="font-medium">{{ perfil.nombre }}</td>
-                <td>
-                  <div class="flex gap-2">
+              <tr v-for="perfil in filteredPerfiles" :key="perfil.id">
+                <td style="padding-left:2rem">
+                  <div style="display:flex;align-items:center;gap:.75rem">
+                    <div class="user-avatar-sm">
+                      {{ perfil.nombre ? perfil.nombre.substring(0, 1).toUpperCase() : '' }}
+                    </div>
+                    <span style="font-weight:600">{{ perfil.nombre }}</span>
+                  </div>
+                </td>
+                <td style="color:#6b7280">
+                  {{ formatDate(perfil.created_at) }}
+                </td>
+                <td style="text-align:right;padding-right:2rem">
+                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:.75rem">
                     <button @click="openModal(perfil)" class="action-icon" title="Editar">
-                      <EditIcon class="w-5 h-5" />
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     </button>
                     <button @click="confirmDelete(perfil)" class="action-icon danger" title="Eliminar">
-                      <TrashIcon class="w-5 h-5" />
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                   </div>
                 </td>
@@ -65,7 +81,7 @@
                 <input v-model="form.nombre" type="text" class="form-control" placeholder="Ej: Programador, Diseñador..." required>
               </div>
             </div>
-            <div style="padding:1rem 1.5rem;background:#f9fafb;display:flex;justify-content:flex-end;gap:1rem">
+            <div style="padding:1rem 1.5rem;background:#f9fafb;display:flex;justify-content:flex-end;gap:1rem;border-top:1px solid #e5e7eb">
               <button type="button" @click="showModal = false" class="btn btn-outline btn-sm">Cancelar</button>
               <button type="submit" class="btn btn-indigo btn-sm" :disabled="saving">
                 {{ saving ? 'Guardando...' : (editingId ? 'Actualizar' : 'Crear') }}
@@ -79,10 +95,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import api from '../../services/api'
-import { PlusIcon, EditIcon, TrashIcon } from 'lucide-vue-next'
+import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 
 const perfiles = ref([])
 const loading = ref(true)
@@ -90,12 +106,23 @@ const showModal = ref(false)
 const saving = ref(false)
 const editingId = ref(null)
 const form = ref({ nombre: '' })
+const searchQuery = ref('')
+
+const filteredPerfiles = computed(() => {
+  if (!searchQuery.value) return perfiles.value
+  return perfiles.value.filter(p => p.nombre.toLowerCase().includes(searchQuery.value.toLowerCase()))
+})
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'Recién creado'
+  return new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 async function fetchPerfiles() {
   loading.value = true
   try {
     const { data } = await api.get('/admin/perfiles')
-    perfiles.value = data.data
+    perfiles.value = data.data || data
   } catch (error) { console.error(error) }
   finally { loading.value = false }
 }
@@ -126,7 +153,7 @@ async function handleSubmit() {
 }
 
 async function confirmDelete(perfil) {
-  if (confirm(`¿Estás seguro de eliminar el perfil "${perfil.nombre}"?`)) {
+  if (confirm(`¿Eliminar este perfil? Esto podría afectar a equipos existentes.`)) {
     try {
       await api.delete(`/admin/perfiles/${perfil.id}`)
       fetchPerfiles()

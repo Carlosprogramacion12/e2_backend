@@ -57,11 +57,13 @@ app.get('/', (req, res) => {
 });
 
 import { carreraRouter } from './modules/carreras/carrera.router';
+import { perfilesRouter } from './modules/perfiles/perfiles.router';
 
 // Main Routes
 app.use('/api/auth', authRouter);
 app.use('/api/admin/usuarios', userRouter);
 app.use('/api/admin/carreras', carreraRouter);
+app.use('/api/admin/perfiles', perfilesRouter);
 app.use('/api/admin/eventos', eventoRouter);
 app.use('/api/admin/criterios', criterioRouter);
 app.use('/api/admin/equipos', equipoRouter);
