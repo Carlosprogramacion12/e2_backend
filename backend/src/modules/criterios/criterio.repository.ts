@@ -5,7 +5,7 @@ export class CriterioRepository {
   async findById(id: number) {
     return prisma.evaluacion_criterios.findUnique({
       where: { id: BigInt(id) },
-      include: { evento: true },
+      include: { eventos: true },
     });
   }
 

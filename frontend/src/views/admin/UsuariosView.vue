@@ -37,7 +37,9 @@
           </div>
           <select v-model="roleFilter" class="form-control" style="width:14rem" @change="fetchUsuarios">
             <option value="">Todos los roles</option>
-            <option v-for="r in roles" :key="r.id" :value="r.nombre">{{ r.nombre }}</option>
+            <option value="Admin">Admin</option>
+            <option value="Juez">Juez</option>
+            <option value="Participante">Participante</option>
           </select>
         </div>
         <div style="font-size:.875rem;font-weight:500;color:#6b7280">
@@ -121,7 +123,6 @@ import api from '../../services/api'
 const route = useRoute()
 const router = useRouter()
 const usuarios = ref([])
-const roles = ref([])
 const loading = ref(false)
 const search = ref('')
 const roleFilter = ref('')
@@ -141,25 +142,15 @@ const pagination = ref({
 
 onMounted(() => {
   fetchUsuarios()
-  fetchRoles()
   if (route.query.success) {
     successMsg.value = route.query.success
     setTimeout(() => {
       successMsg.value = ''
-      // Remove query param without reload
       router.replace({ query: { ...route.query, success: undefined } })
     }, 4000)
   }
 })
 
-async function fetchRoles() {
-  try {
-    const res = await api.get('/admin/roles')
-    roles.value = res.data.data || []
-  } catch (err) {
-    console.error('Error fetching roles:', err)
-  }
-}
 
 async function fetchUsuarios() {
   loading.value = true
@@ -170,8 +161,9 @@ async function fetchUsuarios() {
       role: roleFilter.value
     }
     const res = await api.get('/admin/usuarios', { params })
-    usuarios.value = res.data.data.usuarios || res.data.data // handle both formats
-    pagination.value = res.data.pagination || { total: usuarios.value.length, totalPages: 1 }
+    const responseData = res.data.data || {}
+    usuarios.value = responseData.usuarios || []
+    pagination.value = responseData.pagination || { total: usuarios.value.length, totalPages: 1 }
   } catch (err) {
     console.error('Error fetching users:', err)
   } finally {
