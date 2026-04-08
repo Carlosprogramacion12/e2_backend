@@ -150,6 +150,13 @@ export class EquipoService {
       }
     }
 
+    // 3. Prevent adding a LIDER via admin (Leaders should be the creators)
+    const perfiles: any[] = await prisma.$queryRaw`SELECT nombre FROM perfiles WHERE id = ${data.perfil_id} LIMIT 1`;
+    const perfilNombre = perfiles.length > 0 ? perfiles[0].nombre.toUpperCase() : '';
+    if (perfilNombre.includes('LIDER') || perfilNombre.includes('LÍDER')) {
+      throw { status: 400, message: 'No se puede agregar un nuevo Líder. El líder es asignado automáticamente al crear el equipo.' };
+    }
+
     await equipoRepository.addMiembro(equipoId, data);
     return { success: true, message: 'Miembro agregado al equipo.' };
   }

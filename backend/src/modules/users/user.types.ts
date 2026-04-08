@@ -20,4 +20,5 @@ export interface UserQueryOptions {
   role?: string;
   page?: number;
   limit?: number;
+  evento_id?: number;
 }

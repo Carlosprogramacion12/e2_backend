@@ -25,6 +25,25 @@ export class UserService {
     const limit = options.limit || 10;
     const page = options.page || 1;
 
+    let occupiedUserIds: Set<number> = new Set();
+    
+    if (options.evento_id) {
+      const prisma = (await import('../../utils/prisma')).default;
+      console.log('DEBUG: Buscando ocupados para evento:', options.evento_id);
+      try {
+        const occupied: any[] = await prisma.$queryRaw`
+          SELECT DISTINCT em.user_id 
+          FROM equipo_miembros em
+          JOIN proyectos p ON p.equipo_id = em.equipo_id
+          WHERE p.evento_id = ${BigInt(options.evento_id)}
+        `;
+        console.log('DEBUG: Ocupados encontrados:', occupied.length);
+        occupiedUserIds = new Set(occupied.map(o => Number(o.user_id)));
+      } catch (sqlError) {
+        console.error('DEBUG: Error SQL Occupied:', sqlError);
+      }
+    }
+
     return {
       success: true,
       data: {
@@ -33,6 +52,7 @@ export class UserService {
           name: u.name,
           email: u.email,
           created_at: u.created_at,
+          esta_ocupado: occupiedUserIds.has(Number(u.id)),
           roles: [{
             id: Object.entries(ROLE_ID_MAP).find(([_, v]) => v === u.role)?.[0] || 3,
             nombre: ROLE_NAME_MAP[u.role] || 'Participante'

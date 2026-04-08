@@ -53,8 +53,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response, next: NextFu
     const role = req.query.role as string;
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+    const evento_id = req.query.evento_id ? parseInt(req.query.evento_id as string, 10) : undefined;
 
-    const result = await userService.getAllUsers({ search, role, page, limit });
+    const result = await userService.getAllUsers({ search, role, page, limit, evento_id });
     res.json(result);
   } catch (error) {
     next(error);

@@ -117,7 +117,7 @@ model equipo_miembros {
   id         BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
   equipo_id  BigInt              @db.UnsignedBigInt
   user_id    BigInt              @db.UnsignedBigInt
-  rol        equipo_miembros_rol @default(PROGRAMADOR)
+  rol        String              @default("PROGRAMADOR") @db.VarChar(50)
   created_at DateTime            @default(now())
   equipos    equipos             @relation(fields: [equipo_id], references: [id], onDelete: Cascade)
   users      users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -188,12 +188,7 @@ enum equipo_interacciones_tipo {
   SOLICITUD
 }
 
-enum equipo_miembros_rol {
-  LIDER
-  PROGRAMADOR
-  DISENADOR
-  TESTER
-}
+
 
 enum equipo_interacciones_estado {
   PENDIENTE
