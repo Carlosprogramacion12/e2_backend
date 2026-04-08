@@ -26,7 +26,7 @@ export class AdminRepository {
     });
 
     // 5. Participantes por Carrera (from users.carrera field)
-    const participantesPorCarreraData = await prisma.$queryRaw<Array<{ carrera: string, total: bigint }>>`
+    const participantesPorCarreraData = await prisma.$queryRaw<Array<{ nombre: string, total: bigint }>>`
       SELECT carrera as nombre, COUNT(*) as total
       FROM users
       WHERE role = 'PARTICIPANTE' AND carrera IS NOT NULL AND carrera != ''
@@ -34,7 +34,7 @@ export class AdminRepository {
     `;
     const participantesPorCarrera: Record<string, number> = {};
     participantesPorCarreraData.forEach(row => {
-      participantesPorCarrera[row.carrera || 'Sin carrera'] = Number(row.total);
+      participantesPorCarrera[row.nombre || 'Sin carrera'] = Number(row.total);
     });
 
     // 6. Proyectos Evaluados (evaluaciones table)

@@ -273,8 +273,92 @@ async function main() {
 
   console.log(`✅ ${proyectos.length} proyectos creados programáticamente (4 por evento)`)
 
+  // ─── PARTICIPANTES (20 alumnos) ───
+  const bcrypt = require('bcryptjs')
+  const hashedPass = await bcrypt.hash('password123', 10)
+
+  const participantesData = [
+    { name: 'Carlos Hernández López', email: 'carlos.hernandez@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260101' },
+    { name: 'María Fernanda Ríos', email: 'maria.rios@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260102' },
+    { name: 'José Antonio Ramírez', email: 'jose.ramirez@tecmx.edu', carrera: 'Contador Público', no_control: '20260103' },
+    { name: 'Ana Sofía Martínez', email: 'ana.martinez@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260104' },
+    { name: 'Diego Alejandro Torres', email: 'diego.torres@tecmx.edu', carrera: 'Ingeniería Industrial', no_control: '20260105' },
+    { name: 'Valentina Cruz Morales', email: 'valentina.cruz@tecmx.edu', carrera: 'Ingeniería Civil', no_control: '20260106' },
+    { name: 'Luis Enrique Guzmán', email: 'luis.guzman@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260107' },
+    { name: 'Camila Ortega Díaz', email: 'camila.ortega@tecmx.edu', carrera: 'Ingeniería Industrial', no_control: '20260108' },
+    { name: 'Fernando Castillo Ruiz', email: 'fernando.castillo@tecmx.edu', carrera: 'Ingeniería Eléctrica', no_control: '20260109' },
+    { name: 'Daniela Moreno Vargas', email: 'daniela.moreno@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260110' },
+    { name: 'Andrés Felipe Juárez', email: 'andres.juarez@tecmx.edu', carrera: 'Ingeniería Electrónica', no_control: '20260111' },
+    { name: 'Paola Reyes Sánchez', email: 'paola.reyes@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260112' },
+    { name: 'Ricardo Navarro Ibarra', email: 'ricardo.navarro@tecmx.edu', carrera: 'Ingeniería Mecánica', no_control: '20260113' },
+    { name: 'Isabella Rojas Peña', email: 'isabella.rojas@tecmx.edu', carrera: 'Ingeniería Industrial', no_control: '20260114' },
+    { name: 'Miguel Ángel Flores', email: 'miguel.flores@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260115' },
+    { name: 'Sofía Alejandra Vega', email: 'sofia.vega@tecmx.edu', carrera: 'Ingeniería Electrónica', no_control: '20260116' },
+    { name: 'Emiliano García Luna', email: 'emiliano.garcia@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260117' },
+    { name: 'Renata Méndez Castro', email: 'renata.mendez@tecmx.edu', carrera: 'Ingeniería Química', no_control: '20260118' },
+    { name: 'Sebastián Aguilar Mora', email: 'sebastian.aguilar@tecmx.edu', carrera: 'Ingeniería Industrial', no_control: '20260119' },
+    { name: 'Ximena Pacheco Rivera', email: 'ximena.pacheco@tecmx.edu', carrera: 'Ingeniería en Sistemas Computacionales', no_control: '20260120' },
+  ]
+
+  // Delete old seeded participants (won't touch admin/juez)
+  await prisma.equipo_miembros.deleteMany({})
+
+  const createdParticipantes = []
+  for (const p of participantesData) {
+    const existing = await prisma.users.findUnique({ where: { email: p.email } })
+    if (existing) {
+      // Update existing
+      const updated = await prisma.users.update({
+        where: { email: p.email },
+        data: { name: p.name, carrera: p.carrera, no_control: p.no_control, role: 'PARTICIPANTE', updated_at: new Date() }
+      })
+      createdParticipantes.push(updated)
+    } else {
+      const user = await prisma.users.create({
+        data: {
+          name: p.name,
+          email: p.email,
+          password: hashedPass,
+          carrera: p.carrera,
+          no_control: p.no_control,
+          role: 'PARTICIPANTE',
+          updated_at: new Date()
+        }
+      })
+      createdParticipantes.push(user)
+    }
+  }
+
+  console.log(`✅ ${createdParticipantes.length} participantes creados`)
+
+  // ─── ASIGNAR MIEMBROS A EQUIPOS ───
+  // Roles: LIDER, PROGRAMADOR, DISENADOR, TESTER
+  // 5 teams × 4 members = 20 participants, 1 leader per team
+  const roles: ('LIDER' | 'PROGRAMADOR' | 'DISENADOR' | 'TESTER')[] = ['LIDER', 'PROGRAMADOR', 'DISENADOR', 'TESTER']
+
+  for (let t = 0; t < 5; t++) {
+    const equipo = equipos[t]
+    for (let m = 0; m < 4; m++) {
+      const participante = createdParticipantes[t * 4 + m]
+      const rol = roles[m] // First member = LIDER, then PROGRAMADOR, DISENADOR, TESTER
+      await prisma.equipo_miembros.create({
+        data: {
+          equipo_id: equipo.id,
+          user_id: participante.id,
+          rol: rol,
+          created_at: new Date()
+        }
+      })
+    }
+  }
+
+  console.log(`✅ 20 miembros asignados a 5 equipos (1 líder por equipo)`)
+
   // ─── CRITERIOS y CALIFICACIONES PARA TODOS LOS EVENTOS Y PROYECTOS ───
-  let juez = await prisma.users.findFirst()
+  let juez = await prisma.users.findFirst({ where: { role: 'JUEZ' } })
+  if (!juez) {
+    juez = await prisma.users.findFirst({ where: { role: 'ADMIN' } })
+  }
 
   if (juez) {
     // 1. Asegurar que todos los eventos tengan criterios de evaluación
@@ -321,8 +405,10 @@ async function main() {
   console.log(`   📅 ${eventos.length} eventos`)
   console.log(`   👥 ${equipos.length} equipos`)
   console.log(`   📁 ${proyectos.length} proyectos`)
+  console.log(`   🧑‍🎓 ${createdParticipantes.length} participantes`)
 }
 
 main()
   .catch(e => { console.error('❌ Error:', e); process.exit(1) })
   .finally(() => prisma.$disconnect())
+

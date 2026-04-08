@@ -502,7 +502,7 @@
                       {{ part.user?.name }}
                     </h4>
                     <span
-                      v-if="part.equipo_participante?.perfil_id === 1"
+                      v-if="part.equipo_participante?.perfil === 'Líder'"
                       style="
                         font-size: 10px;
                         background: #fef3c7;
@@ -535,9 +535,7 @@
                   >
                     <span
                       style="font-size: 10px; font-weight: 700; color: #4f46e5"
-                      >{{
-                        getPerfilName(part.equipo_participante?.perfil_id)
-                      }}</span
+                      >{{ part.equipo_participante?.perfil || 'Sin Rol' }}</span
                     >
                   </div>
                 </div>
@@ -786,11 +784,6 @@ async function fetchData() {
   } finally {
     loading.value = false;
   }
-}
-
-function getPerfilName(id) {
-  const p = perfiles.value.find((x) => x.id == id);
-  return p ? p.nombre : "Sin Rol";
 }
 
 async function addMember() {
