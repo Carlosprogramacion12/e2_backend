@@ -811,7 +811,6 @@ onMounted(async () => {
 
   try {
     const eventId = equipo.value?.proyecto?.evento_id;
-    console.log("DEBUG: Event ID to fetch users:", eventId);
     const users = await api.get("/admin/usuarios", { 
       params: { 
         limit: 1000,
