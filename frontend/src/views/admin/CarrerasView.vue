@@ -40,10 +40,13 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="filteredCarreras.length === 0">
+                <tr v-if="loading" style="border:none">
+                  <td colspan="4" class="py-10 text-center"><div class="spinner"></div></td>
+                </tr>
+                <tr v-else-if="carreras.length === 0">
                   <td colspan="4" class="py-5 px-4 text-center text-gray-500">No se encontraron carreras.</td>
                 </tr>
-                <tr v-for="carrera in filteredCarreras" :key="carrera.id" class="border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <tr v-for="carrera in carreras" :key="carrera.id" class="border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td class="py-5 px-4 pl-9 xl:pl-11">
                     <span class="inline-block rounded bg-gray-100 px-2.5 py-0.5 text-sm font-bold text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-mono">
                       {{ carrera.clave || '-' }}
@@ -77,6 +80,14 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination -->
+          <Pagination 
+            v-model="page" 
+            :total-pages="pagination.totalPages" 
+            @update:model-value="fetchCarreras" 
+            style="margin-bottom: 1.5rem;"
+          />
         </div>
       </div>
     </div>
@@ -84,8 +95,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
+import Pagination from '../../components/common/Pagination.vue'
 import api from '../../services/api'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -94,22 +106,30 @@ const route = useRoute()
 const carreras = ref([])
 const msg = ref(route.query.msg || '')
 const searchQuery = ref('')
+const page = ref(1)
+const loading = ref(false)
+const pagination = ref({ total: 0, totalPages: 1 })
 
-const filteredCarreras = computed(() => {
-  if (!searchQuery.value) return carreras.value
-  const q = searchQuery.value.toLowerCase()
-  return carreras.value.filter(c => 
-    (c.nombre && c.nombre.toLowerCase().includes(q)) || 
-    (c.clave && c.clave.toLowerCase().includes(q))
-  )
+watch(searchQuery, () => {
+  page.value = 1
+  fetchCarreras()
 })
 
 async function fetchCarreras() {
+  loading.value = true
   try {
-    const res = await api.get('/admin/carreras')
+    const params = {
+      page: page.value,
+      search: searchQuery.value,
+      limit: 10
+    }
+    const res = await api.get('/admin/carreras', { params })
     carreras.value = res.data.data || []
+    pagination.value = res.data.pagination || { total: carreras.value.length, totalPages: 1 }
   } catch (error) {
     console.error('Error fetching carreras:', error)
+  } finally {
+    loading.value = false
   }
 }
 

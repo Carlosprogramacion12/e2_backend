@@ -26,7 +26,7 @@
       </div>
       <div class="card-body">
         <div v-if="loading" class="loading"><div class="spinner"></div></div>
-        <div v-else-if="filteredPerfiles.length === 0" class="empty-state">
+        <div v-else-if="perfiles.length === 0" class="empty-state">
           <p>No se encontraron perfiles registrados.</p>
         </div>
         <div v-else class="table-container" style="padding:0;border:none;box-shadow:none">
@@ -39,7 +39,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="perfil in filteredPerfiles" :key="perfil.id">
+              <tr v-for="perfil in perfiles" :key="perfil.id">
                 <td style="padding-left:2rem">
                   <div style="display:flex;align-items:center;gap:.75rem">
                     <div class="user-avatar-sm">
@@ -64,6 +64,13 @@
               </tr>
             </tbody>
           </table>
+
+          <Pagination 
+            v-model="page" 
+            :total-pages="pagination.totalPages" 
+            @update:model-value="fetchPerfiles" 
+            style="padding: 1rem 1.5rem"
+          />
         </div>
       </div>
 
@@ -95,8 +102,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
+import Pagination from '../../components/common/Pagination.vue'
 import api from '../../services/api'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 
@@ -107,10 +115,12 @@ const saving = ref(false)
 const editingId = ref(null)
 const form = ref({ nombre: '' })
 const searchQuery = ref('')
+const page = ref(1)
+const pagination = ref({ total: 0, totalPages: 1 })
 
-const filteredPerfiles = computed(() => {
-  if (!searchQuery.value) return perfiles.value
-  return perfiles.value.filter(p => p.nombre.toLowerCase().includes(searchQuery.value.toLowerCase()))
+watch(searchQuery, () => {
+  page.value = 1
+  fetchPerfiles()
 })
 
 function formatDate(dateStr) {
@@ -121,8 +131,14 @@ function formatDate(dateStr) {
 async function fetchPerfiles() {
   loading.value = true
   try {
-    const { data } = await api.get('/admin/perfiles')
-    perfiles.value = data.data || data
+    const params = {
+      page: page.value,
+      search: searchQuery.value,
+      limit: 10
+    }
+    const { data } = await api.get('/admin/perfiles', { params })
+    perfiles.value = data.data || []
+    pagination.value = data.pagination || { total: perfiles.value.length, totalPages: 1 }
   } catch (error) { console.error(error) }
   finally { loading.value = false }
 }

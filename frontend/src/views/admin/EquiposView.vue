@@ -126,25 +126,11 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="pagination.totalPages > 1" style="display:flex;justify-content:space-between;align-items:center;margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border,#e5e7eb)">
-        <button @click="goToPage(pagination.page - 1)" :disabled="pagination.page === 1" 
-                class="pagination-btn" :class="{ disabled: pagination.page === 1 }">
-          <svg style="width:1.25rem;height:1.25rem;margin-right:.5rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18" /></svg>
-          Anterior
-        </button>
-        <div style="display:flex;gap:.5rem">
-          <button v-for="p in pagination.totalPages" :key="p" @click="goToPage(p)"
-                  style="border-radius:.375rem;padding:.25rem .75rem;font-size:.875rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s"
-                  :style="p === pagination.page ? 'background-color:#4f46e5;color:white' : 'background-color:transparent;color:#4b5563;'">
-            {{ p }}
-          </button>
-        </div>
-        <button @click="goToPage(pagination.page + 1)" :disabled="pagination.page === pagination.totalPages"
-                class="pagination-btn" :class="{ disabled: pagination.page === pagination.totalPages }">
-          Siguiente
-          <svg style="width:1.25rem;height:1.25rem;margin-left:.5rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-        </button>
-      </div>
+      <Pagination 
+        v-model="pagination.page" 
+        :total-pages="pagination.totalPages" 
+        @update:model-value="fetchData" 
+      />
     </div>
   </AppLayout>
 </template>
@@ -153,6 +139,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
+import Pagination from '../../components/common/Pagination.vue'
 import api from '../../services/api'
 
 const router = useRouter()
@@ -302,25 +289,4 @@ async function deleteEquipo(id) {
   border-color: #c7d2fe;
 }
 
-.pagination-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: .5rem 1rem;
-  background: white;
-  border: 1px solid var(--border,#e5e7eb);
-  border-radius: .5rem;
-  font-size: .875rem;
-  font-weight: 500;
-  color: #4b5563;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.pagination-btn:hover:not(.disabled) {
-  background: #f9fafb;
-  color: #111827;
-}
-.pagination-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>

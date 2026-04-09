@@ -102,14 +102,11 @@
       </table>
 
       <!-- Pagination -->
-      <div class="pagination" v-if="pagination.totalPages > 1">
-        <button :disabled="page<=1" @click="page--;fetchUsuarios()">←</button>
-        <template v-for="p in paginationRange" :key="p">
-          <button v-if="p !== '...'" :class="{active: p===page}" @click="page=p;fetchUsuarios()">{{ p }}</button>
-          <span v-else style="padding:0 .25rem;color:#9ca3af">...</span>
-        </template>
-        <button :disabled="page>=pagination.totalPages" @click="page++;fetchUsuarios()">→</button>
-      </div>
+      <Pagination 
+        v-model="page" 
+        :total-pages="pagination.totalPages" 
+        @update:model-value="fetchUsuarios" 
+      />
     </div>
   </AppLayout>
 </template>
@@ -118,6 +115,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
+import Pagination from '../../components/common/Pagination.vue'
 import api from '../../services/api'
 
 const route = useRoute()
@@ -234,34 +232,4 @@ async function exportToExcel() {
   }
 }
 
-const paginationRange = computed(() => {
-  const current = page.value
-  const last = pagination.value.totalPages || 1
-  const delta = 2
-  const left = current - delta
-  const right = current + delta + 1
-  const range = []
-  const rangeWithDots = []
-  let l
-
-  for (let i = 1; i <= last; i++) {
-    if (i === 1 || i === last || (i >= left && i < right)) {
-      range.push(i)
-    }
-  }
-
-  for (const i of range) {
-    if (l) {
-      if (i - l === 2) {
-        rangeWithDots.push(l + 1)
-      } else if (i - l !== 1) {
-        rangeWithDots.push('...')
-      }
-    }
-    rangeWithDots.push(i)
-    l = i
-  }
-
-  return rangeWithDots
-})
 </script>

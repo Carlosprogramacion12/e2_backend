@@ -144,22 +144,12 @@
           </div>
 
           <!-- PAGINACIÓN -->
-          <div v-if="pagination.totalPages > 1" style="padding:1rem 1.5rem;border-top:1px solid var(--border,#f3f4f6);display:flex;justify-content:space-between;align-items:center;background:white">
-            <span style="font-size:.875rem;color:#6b7280">
-              Página <span style="font-weight:600;color:#374151">{{ pagination.page }}</span> de <span style="font-weight:600;color:#374151">{{ pagination.totalPages }}</span>
-            </span>
-            <div style="display:flex;gap:.25rem">
-              <button @click="goToPage(pagination.page - 1)" :disabled="pagination.page === 1" class="btn btn-white" style="padding:.375rem .75rem;font-size:.875rem;border-radius:.375rem" :style="{ opacity: pagination.page === 1 ? '0.5' : '1' }">
-                Anterior
-              </button>
-              <button v-for="p in pagination.totalPages" :key="p" @click="goToPage(p)" class="btn" :class="p === pagination.page ? 'btn-indigo' : 'btn-white'" style="padding:.375rem .75rem;font-size:.875rem;border-radius:.375rem">
-                {{ p }}
-              </button>
-              <button @click="goToPage(pagination.page + 1)" :disabled="pagination.page === pagination.totalPages" class="btn btn-white" style="padding:.375rem .75rem;font-size:.875rem;border-radius:.375rem" :style="{ opacity: pagination.page === pagination.totalPages ? '0.5' : '1' }">
-                Siguiente
-              </button>
-            </div>
-          </div>
+          <Pagination 
+            v-model="pagination.page" 
+            :total-pages="pagination.totalPages" 
+            @update:model-value="fetchData" 
+            style="padding: 1rem 1.5rem"
+          />
         </div>
 
       </div>
@@ -171,6 +161,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
+import Pagination from '../../components/common/Pagination.vue'
 import api from '../../services/api'
 
 const router = useRouter()
