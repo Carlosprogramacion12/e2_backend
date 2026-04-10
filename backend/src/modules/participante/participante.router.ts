@@ -89,14 +89,24 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res: Response,
         activeProyectoData = activeMembership.equipos.proyectos.find(p => p.evento_id === eventoIdReq);
       } else {
         // Just fetch the event info for the "No Team" view
-        const eventInfo = await prisma.eventos.findUnique({ where: { id: eventoIdReq } });
+        const eventInfo = await prisma.eventos.findUnique({ 
+          where: { id: eventoIdReq },
+          include: { 
+            _count: { select: { evento_jueces: true } },
+            evaluacion_criterios: { select: { ponderacion: true } }
+          }
+        });
         if (eventInfo) {
+          const rSum = eventInfo.evaluacion_criterios.reduce((acc, c) => acc + Number(c.ponderacion), 0);
+          const maxJ = eventInfo.max_jueces || 5;
+
           evento_inscrito = {
             id: Number(eventInfo.id),
             nombre: eventInfo.nombre,
             descripcion: eventInfo.descripcion,
             fecha_inicio: eventInfo.fecha_inicio,
-            fecha_fin: eventInfo.fecha_fin
+            fecha_fin: eventInfo.fecha_fin,
+            configuracion_lista: (eventInfo._count.evento_jueces >= maxJ) && (Math.abs(rSum - 100) < 0.01)
           };
         }
       }
@@ -169,12 +179,25 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res: Response,
 
       // 6. Event info
       if (activeProyectoData.eventos) {
+        const evId = activeProyectoData.eventos.id;
+        const [juecesCount, criterios] = await Promise.all([
+          prisma.evento_jueces.count({ where: { evento_id: evId } }),
+          prisma.evaluacion_criterios.findMany({ where: { evento_id: evId }, select: { ponderacion: true } })
+        ]);
+        const rSum = criterios.reduce((acc, c) => acc + Number(c.ponderacion), 0);
+        const maxJ = activeProyectoData.eventos.max_jueces || 5;
+
         evento_inscrito = {
           id: Number(activeProyectoData.eventos.id),
           nombre: activeProyectoData.eventos.nombre,
           descripcion: activeProyectoData.eventos.descripcion,
           fecha_inicio: activeProyectoData.eventos.fecha_inicio,
-          fecha_fin: activeProyectoData.eventos.fecha_fin
+          fecha_fin: activeProyectoData.eventos.fecha_fin,
+          configuracion_lista: (juecesCount >= maxJ) && (Math.abs(rSum - 100) < 0.01),
+          falta_configuracion: {
+            jueces: juecesCount < maxJ,
+            rubrica: Math.abs(rSum - 100) > 0.01
+          }
         };
 
         // 5. Get scores by criteria and comments (Weighted Calculation from production)
@@ -279,16 +302,25 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res: Response,
     // 8. Upcoming events (Restored to avoid empty state for users without teams)
     const eventosData = await prisma.eventos.findMany({
       where: { fecha_inicio: { gt: new Date() } },
+      include: { 
+        _count: { select: { evento_jueces: true } },
+        evaluacion_criterios: { select: { ponderacion: true } }
+      },
       orderBy: { fecha_inicio: 'asc' },
       take: 5
     });
-    const eventos = eventosData.map(e => ({
-      id: Number(e.id),
-      nombre: e.nombre,
-      descripcion: e.descripcion,
-      fecha_inicio: e.fecha_inicio,
-      fecha_fin: e.fecha_fin
-    }));
+    const eventos = eventosData.map(e => {
+        const rSum = e.evaluacion_criterios.reduce((acc, c) => acc + Number(c.ponderacion), 0);
+        const maxJ = e.max_jueces || 5;
+        return {
+          id: Number(e.id),
+          nombre: e.nombre,
+          descripcion: e.descripcion,
+          fecha_inicio: e.fecha_inicio,
+          fecha_fin: e.fecha_fin,
+          configuracion_lista: (e._count.evento_jueces >= maxJ) && (Math.abs(rSum - 100) < 0.01)
+        };
+    });
 
     res.json({
       success: true,
@@ -536,17 +568,21 @@ router.post('/equipos', authMiddleware, async (req: AuthRequest, res: Response, 
       return res.status(400).json({ success: false, message: 'Todos los campos obligatorios deben ser completados' });
     }
 
-    // 0. Verificación: ¿El evento ya comenzó?
-    const evento = await prisma.eventos.findUnique({ where: { id: BigInt(evento_id) } });
+    // 0. Verificación: ¿El evento ya comenzó o está incompleto?
+    const evento = await prisma.eventos.findUnique({ 
+      where: { id: BigInt(evento_id) },
+      include: {
+        _count: { select: { evento_jueces: true } },
+        evaluacion_criterios: { select: { ponderacion: true } }
+      }
+    });
+
     if (!evento) {
       return res.status(404).json({ success: false, message: 'Evento no encontrado' });
     }
-    if (new Date(evento.fecha_inicio) <= new Date()) {
-      return res.status(400).json({ success: false, message: 'No se pueden crear equipos para un evento que ya ha comenzado.' });
-    }
 
     // 1. Verificación: ¿Ya está en un equipo para este evento?
-    const existingProject = await prisma.proyectos.findFirst({
+    const userInEvent = await prisma.proyectos.findFirst({
       where: {
         evento_id: BigInt(evento_id),
         equipos: {
@@ -557,8 +593,22 @@ router.post('/equipos', authMiddleware, async (req: AuthRequest, res: Response, 
       }
     });
 
-    if (existingProject) {
+    if (userInEvent) {
       return res.status(400).json({ success: false, message: 'Ya perteneces a un equipo registrado en este mismo evento.' });
+    }
+
+    if (new Date(evento.fecha_inicio) <= new Date()) {
+      return res.status(400).json({ success: false, message: 'No se pueden crear equipos para un evento que ya ha comenzado.' });
+    }
+
+    // Validación de configuración completa
+    const rSum = evento.evaluacion_criterios.reduce((acc, c) => acc + Number(c.ponderacion), 0);
+    const maxJ = evento.max_jueces || 5;
+    if (evento._count.evento_jueces < maxJ || Math.abs(rSum - 100) > 0.01) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'El evento se encuentra en fase de configuración técnica. Por favor, espera a que el administrador complete el panel de jueces y la rúbrica para poder registrarte.' 
+      });
     }
 
     // 2. Crear el equipo
@@ -854,11 +904,19 @@ router.post('/equipos/invitar', authMiddleware, async (req: AuthRequest, res: Re
         return res.status(400).json({ success: false, message: 'No puedes invitar a más personas una vez que el evento ha comenzado.' });
     }
 
-    // Verificar si ya tiene equipo
-    const targetHasTeam = await prisma.equipo_miembros.findFirst({
-        where: { user_id: BigInt(participante_id) }
+    // 3. Verificar si el destinatario ya está participando en ESTE evento
+    const targetInEvent = await prisma.proyectos.findFirst({
+        where: {
+            evento_id: proyecto.evento_id,
+            equipos: {
+                equipo_miembros: {
+                    some: { user_id: BigInt(participante_id) }
+                }
+            }
+        }
     });
-    if (targetHasTeam) return res.status(400).json({ success: false, message: 'El participante seleccionado ya tiene equipo' });
+
+    if (targetInEvent) return res.status(400).json({ success: false, message: 'El participante seleccionado ya está registrado en este mismo evento' });
     
     // Verificar si ya tiene una invitación pendiente de este equipo
     const existingInvite = await prisma.equipo_interacciones.findFirst({
@@ -1003,7 +1061,10 @@ router.post('/invitaciones/:id/responder', authMiddleware, async (req: AuthReque
 
     const interaction = await prisma.equipo_interacciones.findUnique({
       where: { id: BigInt(id) },
-      include: { perfiles: true }
+      include: { 
+        perfiles: true,
+        equipos: { include: { proyectos: true } }
+      }
     });
 
     if (!interaction || interaction.user_id !== BigInt(userId) || interaction.estado !== 'PENDIENTE') {
@@ -1013,11 +1074,19 @@ router.post('/invitaciones/:id/responder', authMiddleware, async (req: AuthReque
     const nuevoEstado = String(estado).toUpperCase();
 
     if (nuevoEstado === 'ACEPTADA') {
-      // Verificar si ya tiene equipo
-      const yaTieneEquipo = await prisma.equipo_miembros.findFirst({
-        where: { user_id: BigInt(userId) }
+      // 1. Verificar si ya está participando en el evento de este equipo
+      const userInEvent = await prisma.proyectos.findFirst({
+        where: {
+          evento_id: interaction.equipos.proyectos[0]?.evento_id,
+          equipos: {
+            equipo_miembros: {
+              some: { user_id: BigInt(userId) }
+            }
+          }
+        }
       });
-      if (yaTieneEquipo) return res.status(400).json({ success: false, message: 'Ya eres parte de un equipo' });
+
+      if (userInEvent) return res.status(400).json({ success: false, message: 'Ya eres parte de un equipo en este evento.' });
 
       // 1. Verificar capacidad del equipo (Máximo 5)
       const memberCount = await prisma.equipo_miembros.count({
@@ -1167,11 +1236,24 @@ router.post('/solicitudes', authMiddleware, async (req: AuthRequest, res: Respon
     if (!equipo_id) return res.status(400).json({ success: false, message: 'Equipo no especificado' });
     if (!perfil_id) return res.status(400).json({ success: false, message: 'Debe seleccionar un rol' });
 
-    // 1. Verificar si el usuario ya está en algún equipo
-    const yaTieneEquipo = await prisma.equipo_miembros.findFirst({
-      where: { user_id: BigInt(userId) }
+    // 1. Verificar si el usuario ya está en este evento específico
+    const targetTeamProject = await prisma.proyectos.findFirst({
+      where: { equipo_id: BigInt(equipo_id) }
     });
-    if (yaTieneEquipo) return res.status(400).json({ success: false, message: 'Ya eres parte de un equipo' });
+
+    if (targetTeamProject) {
+      const userInEvent = await prisma.proyectos.findFirst({
+        where: {
+          evento_id: targetTeamProject.evento_id,
+          equipos: {
+            equipo_miembros: {
+              some: { user_id: BigInt(userId) }
+            }
+          }
+        }
+      });
+      if (userInEvent) return res.status(400).json({ success: false, message: 'Ya estás participando en este evento con otro equipo.' });
+    }
 
     // 2. Verificar si ya hay una solicitud pendiente para ESTE equipo
     const solicitudExistente = await prisma.equipo_interacciones.findFirst({

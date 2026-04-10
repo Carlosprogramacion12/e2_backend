@@ -33,20 +33,19 @@
           <div style="display:flex;flex-wrap:wrap;gap:.75rem;flex:1;justify-content:flex-end">
             <!-- Buscar -->
             <div style="position:relative;width:100%;max-width:16rem">
-              <input type="text" v-model="search" placeholder="Buscar proyecto..."
+              <input type="text" v-model="search" @input="debouncedSearch" placeholder="Buscar proyecto..."
                     style="width:100%;padding:.5rem 1rem .5rem 2.5rem;border-radius:.75rem;border:1px solid var(--border,#e5e7eb);background:var(--input-bg,#f9fafb);font-size:.875rem">
               <svg style="width:1rem;height:1rem;position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:#9ca3af" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             
             <!-- Evento Selector -->
-            <select v-model="eventoId" style="width:100%;max-width:12rem;padding:.5rem 1rem;border-radius:.75rem;border:1px solid var(--border,#e5e7eb);background:var(--input-bg,#f9fafb);font-size:.875rem;cursor:pointer">
+            <select v-model="eventoId" @change="fetchData(1)" style="width:100%;max-width:12rem;padding:.5rem 1rem;border-radius:.75rem;border:1px solid var(--border,#e5e7eb);background:var(--input-bg,#f9fafb);font-size:.875rem;cursor:pointer">
               <option value="">Todos los eventos</option>
               <option v-for="ev in eventos" :key="ev.id" :value="ev.id">
                 {{ ev.nombre.substring(0,25) }}{{ ev.nombre.length > 25 ? '...' : '' }}
               </option>
             </select>
 
-            <button @click="fetchData(1)" class="btn btn-indigo" style="padding:.5rem 1rem;border-radius:.75rem;font-size:.875rem;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.05)">Aplicar</button>
             <button v-if="search || eventoId" @click="clearFilters" class="btn btn-white" style="padding:.5rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center" title="Limpiar filtros">
               <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -171,6 +170,12 @@ const loading = ref(true)
 const search = ref('')
 const eventoId = ref('')
 const successMsg = ref('')
+
+let searchTimeout = null
+function debouncedSearch() {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => fetchData(1), 300)
+}
 
 const pagination = ref({ page: 1, limit: 10, totalPages: 1, total: 0 })
 

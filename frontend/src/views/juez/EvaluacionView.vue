@@ -18,6 +18,17 @@
            </div>
         </div>
 
+        <!-- Banner Modo Espera (No iniciado) -->
+        <div v-if="isNotStarted" style="margin-bottom:1.5rem; background:#fff7ed; border:1px solid #fdba74; border-radius:1rem; padding:1.25rem 1.75rem; display:flex; align-items:center; gap:1.25rem">
+           <div style="background:#f59e0b; color:#fff; width:3rem; height:3rem; border-radius:0.75rem; display:flex; align-items:center; justify-content:center; flex-shrink:0">
+              <svg style="width:1.5rem; height:1.5rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+           </div>
+           <div>
+              <h4 style="margin:0; font-size:1rem; font-weight:800; color:#9a3412">Periodo de calificación no iniciado</h4>
+              <p style="margin:2px 0 0; font-size:0.8rem; color:#c2410c; font-weight:600">El evento aún no ha comenzado. Podrás calificar una vez que inicie oficialmente.</p>
+           </div>
+        </div>
+
         <div style="display:grid; grid-template-columns: 1fr 300px; gap:2rem; align-items: start">
           
           <!-- COLUMNA IZQUIERDA -->
@@ -34,6 +45,7 @@
                 <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-primary)">Rúbrica de Evaluación</h3>
                 <p style="font-size:0.75rem; color:var(--text-muted); margin-top:2px">
                   <template v-if="isFinished">Consulta las puntuaciones otorgadas.</template>
+                  <template v-else-if="isNotStarted">La rúbrica se habilitará al inicio del evento.</template>
                   <template v-else>Evalúa cada criterio del 0 al 100.</template>
                 </p>
               </div>
@@ -45,7 +57,7 @@
                       <span style="font-size:0.95rem; font-weight:700; color:var(--text-secondary)">{{ c.nombre }}</span>
                       <span style="background:var(--bg-main); color:var(--text-muted); font-size:0.6rem; font-weight:700; padding:0.2rem 0.5rem; border-radius:4px; text-transform:uppercase">Peso: {{ c.ponderacion }}%</span>
                     </div>
-                    <div style="font-size:1.5rem; font-weight:900; line-height:1" :style="{ color: isFinished ? '#94a3b8' : getProgressColor(c.score) }">
+                    <div style="font-size:1.5rem; font-weight:900; line-height:1" :style="{ color: (isFinished || isNotStarted) ? '#94a3b8' : getProgressColor(c.score) }">
                       {{ c.score }}<span style="font-size:0.9rem; font-weight:500; color:var(--text-muted); margin-left:1px">/100</span>
                     </div>
                   </div>
@@ -53,12 +65,12 @@
                   <!-- Range Input / Custom Bar -->
                   <div style="position:relative; height:10px; border-radius:99px; background:var(--bg-input); cursor:pointer"
                        :style="{ 
-                         background: `linear-gradient(to right, ${isFinished ? '#cbd5e1' : getProgressColor(c.score)} ${c.score}%, var(--border-color) ${c.score}%)`, 
-                         boxShadow: isFinished ? 'none' : `0 0 10px ${getProgressColor(c.score)}22`,
-                         opacity: isFinished ? 0.7 : 1
+                         background: `linear-gradient(to right, ${ (isFinished || isNotStarted) ? '#cbd5e1' : getProgressColor(c.score)} ${c.score}%, var(--border-color) ${c.score}%)`, 
+                         boxShadow: (isFinished || isNotStarted) ? 'none' : `0 0 10px ${getProgressColor(c.score)}22`,
+                         opacity: (isFinished || isNotStarted) ? 0.7 : 1
                        }">
-                    <input type="range" min="0" max="100" v-model.number="c.score" @input="updateChart" :disabled="isFinished"
-                           class="eval-range" :class="{ 'disabled-range': isFinished }" :style="{ '--bar-color': isFinished ? '#94a3b8' : getProgressColor(c.score) }">
+                    <input type="range" min="0" max="100" v-model.number="c.score" @input="updateChart" :disabled="isFinished || isNotStarted"
+                           class="eval-range" :class="{ 'disabled-range': isFinished || isNotStarted }" :style="{ '--bar-color': (isFinished || isNotStarted) ? '#94a3b8' : getProgressColor(c.score) }">
                   </div>
 
                   <div style="display:flex; justify-content:space-between; margin-top:0.6rem; font-size:0.6rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em">
@@ -78,19 +90,19 @@
               <div style="padding:1.5rem 1.75rem">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
                   <h4 style="font-size:0.9rem; font-weight:700; color:var(--text-secondary)">Comentarios y Recomendaciones</h4>
-                  <div v-if="!isFinished" style="display:flex; gap:0.5rem">
+                  <div v-if="!isFinished && !isNotStarted" style="display:flex; gap:0.5rem">
                     <button @click="focusComment" style="color:#94a3b8; background:none; border:none; cursor:pointer; padding:2px"><svg style="width:1rem; height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
                     <button @click="clearComment" style="color:#fca5a5; background:none; border:none; cursor:pointer; padding:2px"><svg style="width:1rem; height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                   </div>
                 </div>
                 
-                <textarea id="commentArea" v-model="comentario" rows="4" :disabled="isFinished"
-                          :placeholder="isFinished ? 'No hay comentarios registrados.' : 'Escribe aquí tus observaciones...'"
+                <textarea id="commentArea" v-model="comentario" rows="4" :disabled="isFinished || isNotStarted"
+                          :placeholder="(isFinished || isNotStarted) ? 'Comentarios no disponibles.' : 'Escribe aquí tus observaciones...'"
                           style="width:100%; border-radius:0.75rem; border:1.5px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); padding:1rem; font-size:0.875rem; line-height:1.6; outline:none; transition:all 0.3s; resize:none"
-                          :style="isFinished ? 'opacity:0.7; cursor:not-allowed' : ''"
+                          :style="(isFinished || isNotStarted) ? 'opacity:0.7; cursor:not-allowed' : ''"
                           class="eval-textarea"></textarea>
                 
-                <div v-if="!isFinished" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem">
+                <div v-if="!isFinished && !isNotStarted" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem">
                   <span style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem">
                     <svg style="width:0.875rem; height:0.875rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Visible para el equipo.
@@ -119,12 +131,12 @@
 
               <!-- Action Buttons -->
               <div style="width:100%; border-top:1px solid var(--border-color); padding-top:1.5rem">
-                <button v-if="!isFinished" @click="save" :disabled="saving" class="btn-save-eval">
+                <button v-if="!isFinished && !isNotStarted" @click="save" :disabled="saving" class="btn-save-eval">
                   <svg v-if="!saving" style="width:1.1rem; height:1.1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                   <span style="font-size: 0.95rem; font-weight: 800; letter-spacing: -0.01em">{{ saving ? 'Guardando...' : 'Guardar Evaluación' }}</span>
                 </button>
                 <button @click="$router.back()" style="width:100%; margin-top:1.25rem; background:none; border:none; color:var(--text-muted); font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.15em; cursor:pointer; transition:all 0.2s" onmouseover="this.style.color='var(--indigo-600)'" onmouseout="this.style.color='var(--text-muted)'">
-                  {{ isFinished ? 'VOLVER' : 'CANCELAR' }}
+                  {{ (isFinished || isNotStarted) ? 'VOLVER' : 'CANCELAR' }}
                 </button>
               </div>
             </div>
@@ -157,6 +169,11 @@ let chartInstance = null
 const isFinished = computed(() => {
   if (!proyecto.value?.evento?.fecha_fin) return false
   return new Date() > new Date(proyecto.value.evento.fecha_fin)
+})
+
+const isNotStarted = computed(() => {
+  if (!proyecto.value?.evento?.fecha_inicio) return false
+  return new Date() < new Date(proyecto.value.evento.fecha_inicio)
 })
 
 const totalWeightedScore = computed(() => {

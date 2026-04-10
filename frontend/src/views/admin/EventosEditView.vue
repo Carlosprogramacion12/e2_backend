@@ -25,6 +25,45 @@
 
         <div v-if="fetching" style="padding:2rem;text-align:center;color:var(--text-muted)">Cargando datos...</div>
         <form v-else @submit.prevent="saveEvent" style="display:flex;flex-direction:column;gap:1.5rem">
+          
+          <!-- CHECKLIST DE LANZAMIENTO -->
+          <div v-if="validacion" style="background:var(--card-muted);border:1px solid var(--border);border-radius:.75rem;padding:1.25rem;display:flex;flex-direction:column;gap:1rem">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <h4 style="font-size:.875rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:.5rem">
+                <svg style="width:1.25rem;height:1.25rem;color:var(--indigo-500)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Estatus de Configuración
+              </h4>
+              <span v-if="validacion.listo_para_lanzar" style="font-size:.65rem;font-weight:800;text-transform:uppercase;background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:9999px;border:1px solid #86efac">Listo para Lanzar</span>
+              <span v-else style="font-size:.65rem;font-weight:800;text-transform:uppercase;background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:9999px;border:1px solid #fdba74">Incompleto</span>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+              <!-- Jueces Status -->
+              <div style="display:flex;align-items:center;gap:.75rem;background:var(--bg-card);padding:.75rem;border-radius:.5rem;border:1px solid var(--border)">
+                <div :style="{ color: validacion.jueces_completos ? '#10b981' : '#f59e0b' }">
+                  <svg style="width:1.25rem;height:1.25rem" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                </div>
+                <div>
+                  <p style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase">Panel de Jueces</p>
+                  <p style="font-size:.875rem;font-weight:700;color:var(--text-primary)">{{ validacion.jueces_asignados }} / {{ validacion.max_jueces }} <span style="font-weight:400;color:var(--text-muted);font-size:.75rem">asignados</span></p>
+                </div>
+              </div>
+              <!-- Rubrica Status -->
+              <div style="display:flex;align-items:center;gap:.75rem;background:var(--bg-card);padding:.75rem;border-radius:.5rem;border:1px solid var(--border)">
+                <div :style="{ color: validacion.rubrica_completa ? '#10b981' : '#f59e0b' }">
+                  <svg style="width:1.25rem;height:1.25rem" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                </div>
+                <div>
+                  <p style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase">Rúbrica (Total)</p>
+                  <p style="font-size:.875rem;font-weight:700;color:var(--text-primary)">{{ validacion.suma_ponderacion }}% / 100% <span style="font-weight:400;color:var(--text-muted);font-size:.75rem">configurado</span></p>
+                </div>
+              </div>
+            </div>
+            <p v-if="!validacion.listo_para_lanzar" style="font-size:.75rem;color:#c2410c;font-style:italic">
+              * Nota: El evento no será visible para los participantes hasta que ambos indicadores estén completos.
+            </p>
+          </div>
+
           <!-- Error Alert -->
           <div v-if="error" class="alert alert-red" style="margin-bottom:1rem">{{ error }}</div>
 
@@ -113,6 +152,7 @@ const eventId = route.params.id
 const loading = ref(false)
 const fetching = ref(true)
 const error = ref('')
+const validacion = ref(null)
 
 const form = ref({
   nombre: '',
@@ -152,6 +192,8 @@ onMounted(async () => {
     // Format dates to local YYYY-MM-DDTHH:MM that datetime-local expects
     form.value.fecha_inicio = formatToLocalDatetime(ev.fecha_inicio)
     form.value.fecha_fin = formatToLocalDatetime(ev.fecha_fin)
+
+    validacion.value = ev.validacion
 
     // Check if event has started
     if (new Date() >= new Date(ev.fecha_inicio)) {

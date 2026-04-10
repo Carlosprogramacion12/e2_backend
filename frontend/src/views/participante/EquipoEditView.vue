@@ -163,7 +163,7 @@
                <div v-if="invitaciones.length === 0" class="empty-invs" style="margin-bottom: 1.5rem">
                   <p class="text-gray-400">No hay invitaciones recientes.</p>
                </div>
-               <button @click="showInvsList = !showInvsList" class="btn btn-blue shadow-lg h-12 px-6" style="margin-top: 1rem">
+               <button @click="toggleInvsList" class="btn btn-blue shadow-lg h-12 px-6" style="margin-top: 1rem">
                   <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                   Ver Historial
                </button>
@@ -317,6 +317,14 @@ async function fetchInvitations() {
   } catch(e) {} finally {
     loadingInvs.value = false
   }
+}
+
+function toggleInvsList() {
+  if (invitaciones.value.length === 0) {
+    alert('Aún no has enviado ninguna solicitud de unión a este equipo.')
+    return
+  }
+  showInvsList.value = !showInvsList.value
 }
 
 async function saveProject() {

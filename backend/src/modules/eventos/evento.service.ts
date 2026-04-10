@@ -32,9 +32,22 @@ export class EventoService {
       throw { status: 404, message: 'Evento no encontrado' };
     }
 
+    const jueces_asignados = evento.evento_jueces.length;
+    const max_jueces = evento.max_jueces || 5;
+    const suma_ponderacion = evento.evaluacion_criterios.reduce((acc: number, c: any) => acc + Number(c.ponderacion), 0);
+
     const formattedEvento = {
       ...evento,
       id: Number(evento.id),
+      // Validación de lanzamiento
+      validacion: {
+        jueces_completos: jueces_asignados >= max_jueces,
+        rubrica_completa: Math.abs(suma_ponderacion - 100) < 0.01,
+        suma_ponderacion: Number(suma_ponderacion.toFixed(2)),
+        jueces_asignados,
+        max_jueces,
+        listo_para_lanzar: (jueces_asignados >= max_jueces) && (Math.abs(suma_ponderacion - 100) < 0.01)
+      },
       // Frontend expects criterio_evaluacion array
       criterio_evaluacion: evento.evaluacion_criterios.map((c: any) => ({
         ...c,

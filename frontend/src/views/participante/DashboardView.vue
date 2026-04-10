@@ -60,7 +60,11 @@
               <div class="status-card" style="flex:1">
                 <div style="min-width:0; flex:1">
                   <div v-if="data.evento_inscrito" style="margin-bottom: 0.25rem;">
-                    <span v-if="new Date() < new Date(data.evento_inscrito.fecha_inicio)" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">
+                    <span v-if="!data.evento_inscrito.configuracion_lista && new Date() >= new Date(data.evento_inscrito.fecha_inicio) && new Date() <= new Date(data.evento_inscrito.fecha_fin)"
+                          style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">
+                      En Configuración
+                    </span>
+                    <span v-else-if="new Date() < new Date(data.evento_inscrito.fecha_inicio)" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; border: 1px solid #fdba74;">
                       Próximo
                     </span>
                     <span v-else-if="new Date() > new Date(data.evento_inscrito.fecha_fin)" style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: #f3f4f6; color: #4b5563; padding: 2px 8px; border-radius: 4px; border: 1px solid #d1d5db;">
@@ -86,15 +90,17 @@
                   <span style="width:.6rem;height:.6rem;border-radius:50%;background:#4f46e5;display:inline-block"></span>
                   {{ data.equipo.nombre }}
                 </h3>
-                <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
-                  <router-link v-if="data.es_lider && data.equipo" :to="'/participante/equipos/editar/' + data.equipo.id" class="btn-manage">
-                    <svg style="width:1rem;height:1rem;margin-right:.25rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Gestionar
-                  </router-link>
-                  <router-link v-if="data.proyecto" :to="{ path: '/participante/bitacora', query: { proyectoId: data.proyecto.id } }" class="btn btn-sm btn-indigo">
-                    <svg style="width:1rem;height:1rem;margin-right:.25rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4m-2 1v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h11"/></svg>
-                    Subir Avances
-                  </router-link>
+                  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+                    <router-link v-if="data.es_lider && data.equipo" :to="'/participante/equipos/editar/' + data.equipo.id" 
+                      class="btn-manage" :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': !data.evento_inscrito?.configuracion_lista }">
+                      <svg style="width:1rem;height:1rem;margin-right:.25rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      Gestionar
+                    </router-link>
+                    <router-link v-if="data.proyecto" :to="{ path: '/participante/bitacora', query: { proyectoId: data.proyecto.id } }" 
+                      class="btn btn-sm btn-indigo" :class="{ 'opacity-50 cursor-not-allowed pointer-events-none': !data.evento_inscrito?.configuracion_lista }">
+                      <svg style="width:1rem;height:1rem;margin-right:.25rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4m-2 1v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h11"/></svg>
+                      Subir Avances
+                    </router-link>
                   <button @click="handleAbandonarClick" class="btn-leave">
                     <svg style="width:1rem;height:1rem;margin-right:.25rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     Abandonar Equipo

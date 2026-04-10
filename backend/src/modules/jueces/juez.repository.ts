@@ -168,13 +168,21 @@ export class JuezRepository {
     });
     if (!proyecto) throw { status: 404, message: 'Proyecto no encontrado' };
 
-    // Verificar si el evento ha finalizado
+    // Verificar si el evento ha iniciado o finalizado
     const now = new Date();
-    if (proyecto.eventos && now > proyecto.eventos.fecha_fin) {
-      throw { 
-        status: 403, 
-        message: 'El periodo de evaluación para este evento ha finalizado. Los cambios no se han guardado.' 
-      };
+    if (proyecto.eventos) {
+      if (now < proyecto.eventos.fecha_inicio) {
+        throw { 
+          status: 403, 
+          message: 'El periodo de evaluación aún no ha comenzado. El evento inicia el ' + proyecto.eventos.fecha_inicio.toLocaleString() + '.' 
+        };
+      }
+      if (now > proyecto.eventos.fecha_fin) {
+        throw { 
+          status: 403, 
+          message: 'El periodo de evaluación para este evento ha finalizado. Los cambios no se han guardado.' 
+        };
+      }
     }
 
     const ops: any[] = [];
