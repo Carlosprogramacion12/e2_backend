@@ -112,12 +112,18 @@
             <h3 style="font-size:1.125rem;font-weight:700;color:var(--text-primary)">Criterios de Evaluación</h3>
             <p style="font-size:.75rem;color:var(--text-muted)">Define la rúbrica para los jueces.</p>
           </div>
-          <button @click="showCriterioForm = !showCriterioForm" class="btn btn-indigo btn-sm" style="text-transform:uppercase;font-size:.75rem;font-weight:700;padding:.5rem 1rem">
+          <button v-if="!isLocked" @click="showCriterioForm = !showCriterioForm" class="btn btn-indigo btn-sm" style="text-transform:uppercase;font-size:.75rem;font-weight:700;padding:.5rem 1rem">
             {{ showCriterioForm ? 'Cancelar' : '+ Agregar Criterio' }}
           </button>
         </div>
 
         <div style="padding:1.5rem">
+          <!-- Banner de Bloqueo de Rúbrica -->
+          <div v-if="isLocked" style="margin-bottom:1.5rem;background:#fefce8;border:1px solid #fef08a;border-radius:.75rem;padding:1rem;display:flex;align-items:center;gap:1rem;color:#854d0e">
+            <svg style="width:1.25rem;height:1.25rem;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <p style="font-size:.8125rem;font-weight:700">Rúbrica Bloqueada: El evento ya ha iniciado o terminado. No se pueden realizar cambios en los criterios.</p>
+          </div>
+
           <!-- Formulario Nuevo Criterio -->
           <div v-if="showCriterioForm" style="margin-bottom:2rem;background:#eef2ff;padding:1.25rem;border-radius:1rem;border:1px solid #c7d2fe;position:relative">
             <!-- Indicador animado -->
@@ -194,7 +200,7 @@
                 <div style="flex:1">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
                     <h4 style="font-weight:700;color:var(--text-primary);font-size:.9rem">{{ c.nombre }}</h4>
-                    <div style="display:flex;gap:.25rem">
+                    <div v-if="!isLocked" style="display:flex;gap:.25rem">
                       <!-- Editar -->
                       <button @click="startEdit(c)" title="Editar" style="padding:.35rem;border-radius:.5rem;border:none;background:transparent;cursor:pointer;color:#9ca3af;transition:color .15s" class="hover:text-indigo-500">
                         <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>

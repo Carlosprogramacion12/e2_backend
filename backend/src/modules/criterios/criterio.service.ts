@@ -30,6 +30,15 @@ export class CriterioService {
       throw { status: 400, message: 'La ponderación debe ser un número positivo.' };
     }
 
+    // VALIDACIÓN: No se puede crear si el evento ya inició
+    const evento = await prisma.eventos.findUnique({
+      where: { id: BigInt(data.evento_id) }
+    });
+    if (!evento) throw { status: 404, message: 'Evento no encontrado' };
+    if (new Date() >= new Date(evento.fecha_inicio)) {
+      throw { status: 403, message: 'No se pueden añadir criterios a un evento que ya ha iniciado o terminado.' };
+    }
+
     // Validate 100% cap
     const existingCriterios = await prisma.evaluacion_criterios.findMany({
       where: { evento_id: BigInt(data.evento_id) }
@@ -58,6 +67,14 @@ export class CriterioService {
       throw { status: 404, message: 'Criterio no encontrado' };
     }
 
+    // VALIDACIÓN: No se puede editar si el evento ya inició
+    const evento = await prisma.eventos.findUnique({
+      where: { id: (criterio as any).evento_id }
+    });
+    if (evento && new Date() >= new Date(evento.fecha_inicio)) {
+      throw { status: 403, message: 'No se pueden modificar criterios de un evento que ya ha iniciado o terminado.' };
+    }
+
     if (data.ponderacion !== undefined) {
       if (Number(data.ponderacion) <= 0) {
         throw { status: 400, message: 'La ponderación debe ser un número positivo.' };
@@ -84,6 +101,14 @@ export class CriterioService {
     const criterio = await criterioRepository.findById(id);
     if (!criterio) {
       throw { status: 404, message: 'Criterio no encontrado' };
+    }
+
+    // VALIDACIÓN: No se puede borrar si el evento ya inició
+    const evento = await prisma.eventos.findUnique({
+      where: { id: (criterio as any).evento_id }
+    });
+    if (evento && new Date() >= new Date(evento.fecha_inicio)) {
+      throw { status: 403, message: 'No se pueden eliminar criterios de un evento que ya ha iniciado o terminado.' };
     }
 
     await criterioRepository.delete(id);
