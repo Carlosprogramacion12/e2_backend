@@ -62,10 +62,21 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res: Response,
           proyecto_nombre: p.nombre,
           evento_id: Number(p.evento_id),
           evento_nombre: p.eventos?.nombre || 'Evento Desconocido',
+          fecha_inicio: p.eventos?.fecha_inicio,
           fecha_fin: p.eventos?.fecha_fin
         });
       });
     });
+
+    // 2.5 Fetch user preferences for sticky selection
+    const pref = await prisma.user_preferences.findUnique({ where: { user_id: BigInt(userId as string) } });
+    let lastViewedId: bigint | null = null;
+    if (pref && pref.settings) {
+      try {
+        const settings = JSON.parse(pref.settings);
+        if (settings.last_evento_id) lastViewedId = BigInt(settings.last_evento_id);
+      } catch (e) {}
+    }
 
     // Determine the active context
     const proyectoIdReq = req.query.proyectoId ? BigInt(req.query.proyectoId as string) : null;
@@ -112,17 +123,62 @@ router.get('/dashboard', authMiddleware, async (req: AuthRequest, res: Response,
         }
       }
     } else {
-      // Ordenar participaciones por fecha para tomar la más reciente como predeterminada
-      const sortedParticipaciones = [...participaciones].sort((a, b) => 
-        new Date(b.fecha_fin || 0).getTime() - new Date(a.fecha_fin || 0).getTime()
-      );
-      
-      const defaultPart = sortedParticipaciones[0];
-      if (defaultPart) {
-        activeMembership = memberships.find(m => Number(m.equipos.id) === defaultPart.equipo_id);
+      // Fallback 1: Use last viewed event from preferences
+      if (lastViewedId) {
+        activeMembership = memberships.find(m => 
+          m.equipos.proyectos.some(p => p.evento_id === lastViewedId)
+        );
         if (activeMembership) {
-          activeProyectoData = activeMembership.equipos.proyectos.find(p => Number(p.id) === defaultPart.proyecto_id);
+          activeProyectoData = activeMembership.equipos.proyectos.find(p => p.evento_id === lastViewedId);
         }
+      }
+
+      // Fallback 2: Intelligent auto-selection (Active > Future > Past)
+      if (!activeMembership) {
+        const now = new Date();
+        const sortedParticipaciones = [...participaciones].sort((a, b) => {
+          const getWeight = (p: any) => {
+            const start = p.fecha_inicio ? new Date(p.fecha_inicio) : null;
+            const end = p.fecha_fin ? new Date(p.fecha_fin) : null;
+            if (start && end && now >= start && now <= end) return 100; // Active
+            if (start && now < start) return 50; // Future
+            return 0; // Past
+          };
+          const weightDiff = getWeight(b) - getWeight(a);
+          if (weightDiff !== 0) return weightDiff;
+          // Sub-sort by end date descending
+          return new Date(b.fecha_fin || 0).getTime() - new Date(a.fecha_fin || 0).getTime();
+        });
+        
+        const defaultPart = sortedParticipaciones[0];
+        if (defaultPart) {
+          activeMembership = memberships.find(m => Number(m.equipos.id) === defaultPart.equipo_id);
+          if (activeMembership) {
+            activeProyectoData = activeMembership.equipos.proyectos.find(p => Number(p.id) === defaultPart.proyecto_id);
+          }
+        }
+      }
+    }
+
+    // 2.7 Persist current selection as preference
+    const currentEventoId = activeProyectoData ? activeProyectoData.evento_id : (evento_inscrito ? BigInt(evento_inscrito.id) : null);
+    if (currentEventoId && (proyectoIdReq || eventoIdReq || currentEventoId !== lastViewedId)) {
+      try {
+        await prisma.user_preferences.upsert({
+          where: { user_id: BigInt(userId as string) },
+          update: { 
+            settings: JSON.stringify({ last_evento_id: currentEventoId.toString() }),
+            updated_at: new Date()
+          },
+          create: {
+            user_id: BigInt(userId as string),
+            settings: JSON.stringify({ last_evento_id: currentEventoId.toString() }),
+            created_at: new Date(),
+            updated_at: new Date()
+          }
+        });
+      } catch (e) {
+        console.error('Error saving user preferences:', e);
       }
     }
 
