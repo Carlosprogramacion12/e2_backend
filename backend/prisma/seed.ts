@@ -290,6 +290,20 @@ async function main() {
   const hashedPass = await bcrypt.hash('password123', 10)
   const hashedJudgePass = await bcrypt.hash('password', 10) // "password" for judges
 
+  // ─── ADMIN PRINCIPAL ───
+  await prisma.users.upsert({
+    where: { email: 'admin@test.com' },
+    update: { password: hashedJudgePass, role: 'ADMIN', name: 'Administrador Principal', updated_at: new Date() },
+    create: {
+      name: 'Administrador Principal',
+      email: 'admin@test.com',
+      password: hashedJudgePass,
+      role: 'ADMIN',
+      updated_at: new Date()
+    }
+  })
+  console.log('✅ Administrador maestro creado (admin@test.com / password)')
+
   // ─── JUECES (15 jueces) ───
   const juecesData = [
     { name: 'Dr. Roberto Méndez', email: 'roberto.mendez@juez.com' },
