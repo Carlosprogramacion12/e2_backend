@@ -709,7 +709,12 @@ router.delete('/equipos/salir', authMiddleware, async (req: AuthRequest, res: Re
     }
 
     // Validar que el evento no haya iniciado o ya finalizado
-    const proyectoSalir = membership.equipos.proyectos[0];
+    const eventoIdContext = req.query.evento_id as string | undefined;
+    let proyectoSalir = membership.equipos.proyectos[0];
+    if (eventoIdContext) {
+      const pMatch = membership.equipos.proyectos.find(p => p.evento_id.toString() === eventoIdContext);
+      if (pMatch) proyectoSalir = pMatch;
+    }
     if (proyectoSalir?.eventos) {
       const ahoraSalir = new Date();
       const fechaInicioSalir = new Date(proyectoSalir.eventos.fecha_inicio);
@@ -1088,7 +1093,12 @@ router.delete('/equipos/miembros/:id', authMiddleware, async (req: AuthRequest, 
     }
 
     // 2. Validar que el evento no haya iniciado o finalizado
-    const proyecto = myMembership.equipos.proyectos[0];
+    const eventoIdContext = req.query.evento_id as string | undefined;
+    let proyecto = myMembership.equipos.proyectos[0];
+    if (eventoIdContext) {
+      const pMatch = myMembership.equipos.proyectos.find(p => p.evento_id.toString() === eventoIdContext);
+      if (pMatch) proyecto = pMatch;
+    }
     if (proyecto?.eventos) {
       const ahora = new Date();
       const fechaInicio = new Date(proyecto.eventos.fecha_inicio);

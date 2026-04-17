@@ -428,7 +428,10 @@ async function sendInvitation() {
 async function removeMember(userId) {  
   if (!await alerts.confirm('¿Seguro que deseas eliminar a este miembro del equipo?', '¿Eliminar miembro?', 'Sí, eliminar', 'Cancelar')) return
   try {
-    await api.delete(`/participante/equipos/miembros/${userId}`)
+    const evId = eventoData.value?.id || undefined;
+    await api.delete(`/participante/equipos/miembros/${userId}`, {
+      params: { evento_id: evId }
+    })
     await fetchData()
   } catch(e) {
     alerts.error(e.response?.data?.message || 'Error al eliminar')

@@ -605,8 +605,10 @@ async function confirmAbandonarConLider() {
 async function abandonarEquipo(nuevoLiderId = null) {
   try {
     loading.value = true;
+    const eventoId = data.value.evento_inscrito?.id || undefined;
     const res = await api.delete('/participante/equipos/salir', {
-      data: { nuevoLiderId }
+      data: { nuevoLiderId },
+      params: { evento_id: eventoId }
     });
     if (res.data.success) {
       alerts.success(res.data.message);
