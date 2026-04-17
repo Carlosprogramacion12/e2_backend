@@ -525,7 +525,7 @@ router.get('/eventos-disponibles', authMiddleware, async (req: AuthRequest, res:
 router.get('/eventos-proximos', authMiddleware, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const eventos = await prisma.eventos.findMany({
-      where: { fecha_fin: { gte: new Date() } },
+      where: { fecha_inicio: { gt: new Date() } },
       orderBy: { fecha_inicio: 'asc' }
     });
     res.json({ success: true, data: eventos.map(e => ({
