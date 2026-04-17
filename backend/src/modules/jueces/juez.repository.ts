@@ -16,14 +16,26 @@ export class JuezRepository {
     const eventosConProyectos = await Promise.all(
       eventosAsignados.map(async (evento) => {
         const proyectos = await prisma.proyectos.findMany({
-          where: { evento_id: evento.id },
+          where: {
+            evento_id: evento.id,
+            equipos: {
+              equipo_miembros: { some: {} } // at least 1
+            }
+          },
           include: {
-            equipos: true,
+            equipos: {
+              include: { _count: { select: { equipo_miembros: true } } }
+            },
             evaluaciones: {
               where: { juez_id: BigInt(userId) }
             }
           }
         });
+
+        // Solo mostrar equipos completos (5/5)
+        const proyectosCompletos = proyectos.filter(
+          p => (p.equipos?._count?.equipo_miembros ?? 0) >= 5
+        );
 
         return {
           id: Number(evento.id),
@@ -31,7 +43,7 @@ export class JuezRepository {
           descripcion: evento.descripcion,
           fecha_inicio: evento.fecha_inicio,
           fecha_fin: evento.fecha_fin,
-          proyectos: proyectos.map((p) => ({
+          proyectos: proyectosCompletos.map((p) => ({
             id: Number(p.id),
             nombre: p.nombre,
             equipo: p.equipos?.nombre || 'Sin equipo',
@@ -50,6 +62,11 @@ export class JuezRepository {
       include: {
         evaluacion_criterios: true,
         proyectos: {
+          where: {
+            equipos: {
+              equipo_miembros: { some: {} } // filtro rapido, completitud verificada en JS
+            }
+          },
           include: {
             equipos: {
               include: {
@@ -64,8 +81,10 @@ export class JuezRepository {
 
     if (!evento) return null;
 
-    // Filter evaluations for the specific judge for status check
-    const formattedProyectos = evento.proyectos.map(p => {
+    // Filter evaluations for the specific judge + solo equipos con 5 miembros
+    const formattedProyectos = evento.proyectos
+      .filter(p => (p.equipos?.equipo_miembros?.length ?? 0) >= 5)
+      .map(p => {
       const myEvals = p.evaluaciones.filter(e => e.juez_id === BigInt(juezId));
       const totalScore = p.evaluaciones.reduce((acc, e) => acc + Number(e.puntuacion), 0);
       
