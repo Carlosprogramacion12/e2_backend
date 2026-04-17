@@ -694,11 +694,31 @@ router.delete('/equipos/salir', authMiddleware, async (req: AuthRequest, res: Re
     
     const membership = await prisma.equipo_miembros.findFirst({
       where: { user_id: BigInt(userId) },
-      include: { equipos: { include: { equipo_miembros: true } } }
+      include: {
+        equipos: {
+          include: {
+            equipo_miembros: true,
+            proyectos: { include: { eventos: true } }
+          }
+        }
+      }
     });
 
     if (!membership) {
       return res.status(404).json({ success: false, message: 'No perteneces a ningún equipo.' });
+    }
+
+    // Validar que el evento no haya iniciado o ya finalizado
+    const proyectoSalir = membership.equipos.proyectos[0];
+    if (proyectoSalir?.eventos) {
+      const ahoraSalir = new Date();
+      const fechaInicioSalir = new Date(proyectoSalir.eventos.fecha_inicio);
+      if (ahoraSalir >= fechaInicioSalir) {
+        return res.status(403).json({
+          success: false,
+          message: 'No puedes abandonar el equipo una vez que el evento ha iniciado o ya finalizó.'
+        });
+      }
     }
 
     const equipoId = membership.equipo_id;
@@ -1067,7 +1087,7 @@ router.delete('/equipos/miembros/:id', authMiddleware, async (req: AuthRequest, 
       return res.status(400).json({ success: false, message: 'No puedes eliminarte a ti mismo desde aquí. Usa "Abandonar equipo".' });
     }
 
-    // 2. Validar que el evento no haya iniciado
+    // 2. Validar que el evento no haya iniciado o finalizado
     const proyecto = myMembership.equipos.proyectos[0];
     if (proyecto?.eventos) {
       const ahora = new Date();
@@ -1075,9 +1095,13 @@ router.delete('/equipos/miembros/:id', authMiddleware, async (req: AuthRequest, 
       if (ahora >= fechaInicio) {
         return res.status(403).json({
           success: false,
-          message: 'No puedes eliminar miembros una vez que el evento ha iniciado o finalizado.'
+          message: 'No puedes eliminar miembros una vez que el evento ha iniciado o ya finalizó.'
         });
       }
+    } else if (!proyecto) {
+      // Si el equipo ya está registrado en un evento pero no tiene proyecto asociado,
+      // es una anomalía — bloquear por seguridad solo si hay membresía activa con evento
+      // (si no hay proyecto en absoluto, se permite porque aún no se inscribió)
     }
 
     // 3. Eliminar el miembro del equipo
