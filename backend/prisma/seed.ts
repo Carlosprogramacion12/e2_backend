@@ -147,39 +147,42 @@ async function main() {
   console.log(`✅ 15 participantes creados (password)`)
 
   // ─── EQUIPOS (3 Equipos con 5 participantes cada uno) ───
-  const equipoNombres = ['Equipo Alpha', 'Equipo Beta', 'Equipo Gamma']
   const roles = ['LIDER', 'PROGRAMADOR', 'PROGRAMADOR', 'DISENADOR', 'TESTER']
   
-  for (let t = 0; t < 3; t++) {
-    const equipo = await prisma.equipos.create({
-      data: {
-        nombre: equipoNombres[t],
-        max_programadores: 2,
-        max_disenadores: 1,
-        max_testers: 1,
-        updated_at: new Date()
-      }
-    })
+  let teamCounter = 1;
 
-    // 5 miembros por equipo
-    for (let m = 0; m < 5; m++) {
-      await prisma.equipo_miembros.create({
+  for (let e = 0; e < 3; e++) {
+    // Para cada evento, los 15 participantes se organizan en 3 equipos nuevos
+    for (let t = 0; t < 3; t++) {
+      const equipo = await prisma.equipos.create({
         data: {
-          equipo_id: equipo.id,
-          user_id: participantes[t * 5 + m].id,
-          rol: roles[m],
-          created_at: new Date()
+          nombre: `Equipo ${teamCounter} (${eventos[e].nombre})`,
+          max_programadores: 2,
+          max_disenadores: 1,
+          max_testers: 1,
+          updated_at: new Date()
         }
       })
-    }
+      teamCounter++;
 
-    // El equipo se inscribe en los 3 eventos (3 proyectos)
-    for (let e = 0; e < 3; e++) {
+      // 5 miembros por equipo
+      for (let m = 0; m < 5; m++) {
+        await prisma.equipo_miembros.create({
+          data: {
+            equipo_id: equipo.id,
+            user_id: participantes[t * 5 + m].id,
+            rol: roles[m],
+            created_at: new Date()
+          }
+        })
+      }
+
+      // El equipo se inscribe ÚNICAMENTE a su evento correspondiente
       const proyecto = await prisma.proyectos.create({
         data: {
           equipo_id: equipo.id,
           evento_id: eventos[e].id,
-          nombre: `Proyecto ${equipo.nombre} para ${eventos[e].nombre}`,
+          nombre: `Proyecto ${equipo.nombre}`,
           descripcion: `Esta es la solución propuesta por el ${equipo.nombre}.`,
           repositorio_url: 'https://github.com/ejemplo',
           updated_at: new Date()
@@ -209,8 +212,7 @@ async function main() {
     }
   }
   
-  console.log(`✅ 3 Equipos creados con 5 miembros exactos cada uno.`)
-  console.log(`✅ Los 3 Equipos generaron proyectos en los 3 Eventos.`)
+  console.log(`✅ 9 Equipos independientes creados (3 por cada evento), simulando con éxito un ciclo real.`)
 
   console.log('\n🎉 Seed completado exitosamente de acuerdo a tus peticiones perfectas!')
 }
