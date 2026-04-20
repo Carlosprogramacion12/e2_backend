@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: e2_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-Rangers18}
+      MYSQL_DATABASE: gestor_proyectos
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: e2_backend
+    environment:
+      PORT: 3001
+      DB_HOST: mysql_db
+      DB_PORT: 3306
+      DB_NAME: gestor_proyectos
+      DB_USER: root
+      DB_PASS: ${DB_PASS:-Rangers18}
+      JWT_SECRET: ${JWT_SECRET:-gestor_proyectos_jwt_secret_key_2026}
+      JWT_EXPIRES_IN: 24h
+      DATABASE_URL: mysql://root:${DB_PASS:-Rangers18}@mysql_db:3306/gestor_proyectos?schema=public
+      PRISMA_CLIENT_ENGINE_TYPE: library
+      PRISMA_CLI_QUERY_ENGINE_TYPE: library
+    ports:
+      - "3001:3001"
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      - mysql_db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: e2_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  backend_uploads:
