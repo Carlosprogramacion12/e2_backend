@@ -578,14 +578,14 @@
                 @click="removeMember(part.user_id)"
                 style="
                   padding: 0.5rem;
-                  color: #d1d5db;
-                  background: none;
+                  color: #ef4444;
+                  background: #fef2f2;
                   border: none;
                   cursor: pointer;
                   border-radius: 0.5rem;
                   transition: all 0.2s;
                 "
-                class="hover:text-red-500 hover:bg-red-50"
+                class="hover:bg-red-100"
                 title="Eliminar del equipo"
               >
                 <svg
