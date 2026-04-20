@@ -114,14 +114,14 @@ export class ResultadosService {
     const proyecto = await prisma.proyectos.findUnique({
       where: { id: BigInt(proyectoId) },
       include: {
-        equipo: {
+        equipos: {
           include: {
-            miembros: {
-              include: { user: true }
+            equipo_miembros: {
+              include: { users: true }
             }
           }
         },
-        evento: true
+        eventos: true
       }
     });
 
@@ -137,11 +137,11 @@ export class ResultadosService {
         equipo_id: Number(proyecto.equipo_id)
       },
       textoLogro,
-      nombreTitular: proyecto.equipo ? proyecto.equipo.nombre : 'Sin equipo',
+      nombreTitular: proyecto.equipos ? proyecto.equipos.nombre : 'Sin equipo',
       mostrarIntegrantes: true,
-      evento: proyecto.evento ? {
-        ...proyecto.evento,
-        id: Number(proyecto.evento.id)
+      evento: proyecto.eventos ? {
+        ...proyecto.eventos,
+        id: Number(proyecto.eventos.id)
       } : null
     };
 

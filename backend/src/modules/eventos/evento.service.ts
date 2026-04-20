@@ -169,33 +169,6 @@ export class EventoService {
     return { success: true, message: 'Evento eliminado exitosamente.' };
   }
 
-  async addJuezToEvento(eventoId: number, userId: number) {
-    const eventoRes = await this.getEventoById(eventoId);
-    const evento = eventoRes.data;
-
-    // 1. Validar límite máximo
-    const currentCount = evento.jueces?.length || 0;
-    const limit = evento.max_jueces || 5;
-
-    if (currentCount >= limit) {
-      throw { status: 400, message: `Capacidad máxima alcanzada (${limit} jueces).` };
-    }
-
-    // 2. Validar si ya está asignado
-    const alreadyAsigned = evento.jueces?.find((j: any) => j.id === userId);
-    if (alreadyAsigned) {
-      throw { status: 400, message: 'El juez ya está asignado a este evento.' };
-    }
-
-    await eventoRepository.addJuez(eventoId, userId);
-    return { success: true, message: 'Juez asignado correctamente.' };
-  }
-
-  async removeJuezFromEvento(eventoId: number, userId: number) {
-    await eventoRepository.removeJuez(eventoId, userId);
-    return { success: true, message: 'Juez removido correctamente.' };
-  }
-
   async getAvailableJueces() {
     const jueces = await eventoRepository.getAvailableJueces();
     return {
