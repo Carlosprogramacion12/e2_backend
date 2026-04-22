@@ -125,9 +125,9 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore } from '../../stores/auth.store'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
 
 const router = useRouter()

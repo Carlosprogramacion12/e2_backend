@@ -168,7 +168,7 @@ import { Bar as BarChart, Doughnut as DoughnutChart, Line as LineChart, Pie as P
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import draggable from 'vuedraggable'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler)

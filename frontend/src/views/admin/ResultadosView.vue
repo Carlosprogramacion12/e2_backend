@@ -178,7 +178,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import ConstanciaTemplate from '../../components/ConstanciaTemplate.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 
 const eventos = ref([])
 const eventoSeleccionado = ref(null)

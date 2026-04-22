@@ -125,7 +125,7 @@ import { ref, onMounted } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import CalendarWidget from '../../components/CalendarWidget.vue'
 import Pagination from '../../components/common/Pagination.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
 
 const eventos = ref([])

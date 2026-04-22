@@ -69,7 +69,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 
 const eventos = ref([])
 const loading = ref(true)

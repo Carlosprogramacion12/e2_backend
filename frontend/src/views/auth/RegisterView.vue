@@ -41,7 +41,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore } from '../../stores/auth.store'
 const auth = useAuthStore(); const router = useRouter()
 const name = ref(''); const email = ref(''); const password = ref(''); const password_confirmation = ref(''); const error = ref(''); const loading = ref(false)
 const isDark = ref(localStorage.getItem('color-theme') === 'dark')

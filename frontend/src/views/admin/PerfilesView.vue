@@ -105,7 +105,7 @@
 import { ref, onMounted, watch } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import Pagination from '../../components/common/Pagination.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 
 const perfiles = ref([])

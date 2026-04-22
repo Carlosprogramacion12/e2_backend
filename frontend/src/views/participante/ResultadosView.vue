@@ -197,7 +197,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 
 const ranking = ref([])
 const eventos = ref([]) // Lista de todos los eventos

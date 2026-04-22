@@ -110,7 +110,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 
 const router = useRouter()
 const loading = ref(false)

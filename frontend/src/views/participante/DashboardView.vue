@@ -426,10 +426,10 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import CalendarWidget from '../../components/CalendarWidget.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
 import Chart from 'chart.js/auto'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore } from '../../stores/auth.store'
 
 const router = useRouter()
 const route = useRoute()

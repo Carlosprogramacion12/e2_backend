@@ -139,7 +139,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import Pagination from '../../components/common/Pagination.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
 
 const router = useRouter()

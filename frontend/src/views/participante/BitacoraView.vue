@@ -129,9 +129,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore } from '../../stores/auth.store'
 
 const route = useRoute()
 const auth = useAuthStore()

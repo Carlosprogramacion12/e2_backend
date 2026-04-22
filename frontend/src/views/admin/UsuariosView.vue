@@ -117,9 +117,9 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import Pagination from '../../components/common/Pagination.vue'
-import api from '../../services/api'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore } from '../../stores/auth.store'
 
 const route = useRoute()
 const router = useRouter()

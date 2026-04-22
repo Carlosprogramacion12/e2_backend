@@ -176,8 +176,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import { useAuthStore } from '../../stores/auth'
-import api from '../../services/api'
+import { useAuthStore } from '../../stores/auth.store'
+import api from '../../plugins/axios'
 import alerts from '../../services/alerts'
 
 const auth = useAuthStore()

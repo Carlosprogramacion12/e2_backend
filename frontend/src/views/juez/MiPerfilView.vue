@@ -133,8 +133,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import api from '../../services/api'
-import { useAuthStore } from '../../stores/auth'
+import api from '../../plugins/axios'
+import { useAuthStore } from '../../stores/auth.store'
 import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()

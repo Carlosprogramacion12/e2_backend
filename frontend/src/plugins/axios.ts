@@ -12,7 +12,7 @@ api.interceptors.request.use(config => {
   return config
 })
 
-import alerts from './alerts'
+import alerts from '../services/alerts'
 
 // Interceptor: redirigir a login si 401 y mostrar alertas de éxito globales
 api.interceptors.response.use(
@@ -23,8 +23,8 @@ api.interceptors.response.use(
     // Evitar alerta en login
     const isLoginPath = response.config?.url?.includes('/login') || response.config?.url?.includes('/login-participante')
 
-    if (['post', 'put', 'delete', 'patch'].includes(method) && !isLoginPath) {
-      if (!response.config?.skipSuccessAlert) {
+    if (method && ['post', 'put', 'delete', 'patch'].includes(method) && !isLoginPath) {
+      if (!(response.config as any)?.skipSuccessAlert) {
         const msg = response.data?.message || 'Operación realizada correctamente'
         // Mostrar alerta verde estilo app (pero que no bloquee navegación rápida)
         alerts.success(msg)
