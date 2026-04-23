@@ -1,6 +1,6 @@
 import { CriterioRepository } from './criterio.repository';
 import { CreateCriterioDto, UpdateCriterioDto } from './criterio.types';
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { AppError } from '../../errors';
 
 

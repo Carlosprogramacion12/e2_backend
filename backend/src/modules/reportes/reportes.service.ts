@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { PdfService } from '../../utils/pdf.service';
 import { Response } from 'express';
 

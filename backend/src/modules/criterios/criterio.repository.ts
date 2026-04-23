@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { CreateCriterioDto, UpdateCriterioDto } from './criterio.types';
 
 export class CriterioRepository {

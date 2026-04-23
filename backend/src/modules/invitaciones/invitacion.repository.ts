@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { CrearInvitacionDto } from './invitacion.types';
 
 export class InvitacionRepository {

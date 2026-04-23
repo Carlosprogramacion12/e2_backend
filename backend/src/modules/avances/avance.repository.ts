@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { StoreAvanceDto } from './avance.types';
 
 export class AvanceRepository {

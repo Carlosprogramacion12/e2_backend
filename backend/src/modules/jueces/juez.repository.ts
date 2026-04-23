@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { StoreEvaluacionDto } from './juez.types';
 import { AppError } from '../../errors';
 

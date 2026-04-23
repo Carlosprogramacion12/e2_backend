@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { RankingService } from './ranking.service';
 import { AppError } from '../../errors';
 

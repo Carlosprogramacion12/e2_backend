@@ -85,7 +85,7 @@ router.get('/exportar', authMiddleware, async (req: Request, res: Response, next
     }
 
     // Fetch ALL users (no pagination for export)
-    const prisma = (await import('../../prisma.config')).default;
+    const prisma = (await import('../prisma.config')).default;
     const usuarios = await prisma.users.findMany({
       where,
       orderBy: { created_at: 'desc' }

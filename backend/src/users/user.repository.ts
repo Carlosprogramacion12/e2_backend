@@ -1,4 +1,4 @@
-import prisma from '../../prisma.config';
+import prisma from '../prisma.config';
 import { CreateUserDto, UpdateUserDto, UserQueryOptions } from './user.types';
 
 export class UserRepository {

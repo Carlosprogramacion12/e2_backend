@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 
 export class RankingService {
   async calcularRanking(eventoId: number) {

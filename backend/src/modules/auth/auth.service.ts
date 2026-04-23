@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { AuthRepository } from './auth.repository';
 import { LoginDto, RegisterDto, AuthResponse } from './auth.types';
 import { config } from '../../config';
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { AppError } from '../../errors';
 
 

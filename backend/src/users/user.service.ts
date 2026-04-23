@@ -32,7 +32,7 @@ export class UserService {
     let occupiedUserIds: Set<number> = new Set();
     
     if (options.evento_id) {
-      const prisma = (await import('../../prisma.config')).default;
+      const prisma = (await import('../prisma.config')).default;
       try {
         const occupied: any[] = await prisma.$queryRaw`
           SELECT DISTINCT em.user_id 

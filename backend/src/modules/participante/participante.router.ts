@@ -1,6 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { authMiddleware, AuthRequest } from '../../middlewares/auth.middleware';
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { ConstanciaService } from '../constancias/constancias.service';
 import { PdfService } from '../../utils/pdf.service';
 import { RankingService } from '../resultados/ranking.service';

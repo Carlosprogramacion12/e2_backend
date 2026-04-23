@@ -1,6 +1,6 @@
 import { ConstanciaRepository } from './constancias.repository';
 import { RankingService } from '../resultados/ranking.service';
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { AppError } from '../../errors';
 
 

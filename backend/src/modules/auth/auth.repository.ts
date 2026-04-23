@@ -1,4 +1,4 @@
-import prisma from '../../../prisma.config';
+import prisma from '../../prisma.config';
 import { RegisterDto } from './auth.types';
 
 export class AuthRepository {

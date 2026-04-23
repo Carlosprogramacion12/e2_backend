@@ -4,9 +4,9 @@
   "description": "API REST para el Sistema de Gestión de Proyectos Académicos",
   "main": "server.js",
   "scripts": {
-    "start": "node dist/src/server.js",
+    "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "seed": "tsx prisma/seed.ts"
   },
   "prisma": {
