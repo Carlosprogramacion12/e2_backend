@@ -2,8 +2,27 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import path from 'path';
+
 import { errorMiddleware } from './middlewares/error.middleware';
 import { config } from './config';
+
+import { authRouter } from './modules/auth/auth.router';
+import { userRouter } from './users/user.router';
+import { eventoRouter } from './modules/eventos/evento.router';
+import { criterioRouter } from './modules/criterios/criterio.router';
+import { equipoRouter } from './modules/equipos/equipo.router';
+import { proyectoRouter } from './modules/proyectos/proyecto.router';
+import { adminRouter } from './modules/admin/admin.router';
+import { resultadosRouter } from './modules/resultados/resultados.router';
+import { juezRouter } from './modules/jueces/juez.router';
+import { avanceRouter } from './modules/avances/avance.router';
+import { invitacionRouter } from './modules/invitaciones/invitacion.router';
+import { constanciaRouter } from './modules/constancias/constancias.router';
+import { reportesRouter } from './modules/reportes/reportes.router';
+import { participanteDashboardRouter } from './modules/participante/participante.router';
+import { carreraRouter } from './modules/carreras/carrera.router';
+import { perfilesRouter } from './modules/perfiles/perfiles.router';
 
 const app: Application = express();
 
@@ -23,23 +42,6 @@ const swaggerOptions = {
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-import { authRouter } from './modules/auth/auth.router';
-import { userRouter } from './users/user.router';
-import { eventoRouter } from './modules/eventos/evento.router';
-import { criterioRouter } from './modules/criterios/criterio.router';
-import { equipoRouter } from './modules/equipos/equipo.router';
-import { proyectoRouter } from './modules/proyectos/proyecto.router';
-import { adminRouter } from './modules/admin/admin.router';
-import { resultadosRouter } from './modules/resultados/resultados.router';
-import { juezRouter } from './modules/jueces/juez.router';
-import { avanceRouter } from './modules/avances/avance.router';
-import { invitacionRouter } from './modules/invitaciones/invitacion.router';
-import { constanciaRouter } from './modules/constancias/constancias.router';
-import { reportesRouter } from './modules/reportes/reportes.router';
-import { participanteDashboardRouter } from './modules/participante/participante.router';
-
-import path from 'path';
-
 // Middlewares
 app.use(cors());
 app.use(express.json());
@@ -56,27 +58,42 @@ app.get('/', (req, res) => {
   });
 });
 
-import { carreraRouter } from './modules/carreras/carrera.router';
-import { perfilesRouter } from './modules/perfiles/perfiles.router';
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
+import { authMiddleware } from './middlewares/auth.middleware';
+import { requireRole } from './middlewares/role.middleware';
+
+// Guards de seguridad global por grupo de rutas
+const adminGuard = [authMiddleware, requireRole(['ADMIN'])];
+const juezGuard = [authMiddleware, requireRole(['JUEZ'])];
+const participanteGuard = [authMiddleware, requireRole(['PARTICIPANTE'])];
 
 // Main Routes
 app.use('/api/auth', authRouter);
-app.use('/api/admin/usuarios', userRouter);
-app.use('/api/admin/carreras', carreraRouter);
-app.use('/api/admin/perfiles', perfilesRouter);
-app.use('/api/admin/eventos', eventoRouter);
-app.use('/api/admin/criterios', criterioRouter);
-app.use('/api/admin/equipos', equipoRouter);
-app.use('/api/admin/proyectos', proyectoRouter);
-app.use('/api/admin/dashboard', adminRouter);
-app.use('/api/admin/resultados', resultadosRouter);
-app.use('/api/admin/constancias', constanciaRouter);
-app.use('/api/admin/reportes', reportesRouter);
-app.use('/api/juez', juezRouter);
-app.use('/api/participante/avances', avanceRouter);
-app.use('/api/participante/invitaciones', invitacionRouter);
-app.use('/api/participante/resultados', resultadosRouter);
-app.use('/api/participante', participanteDashboardRouter);
+
+// Admin Routes (Protegidas solo para ADMIN)
+app.use('/api/admin/usuarios', adminGuard, userRouter);
+app.use('/api/admin/carreras', adminGuard, carreraRouter);
+app.use('/api/admin/perfiles', adminGuard, perfilesRouter);
+app.use('/api/admin/eventos', adminGuard, eventoRouter);
+app.use('/api/admin/criterios', adminGuard, criterioRouter);
+app.use('/api/admin/equipos', adminGuard, equipoRouter);
+app.use('/api/admin/proyectos', adminGuard, proyectoRouter);
+app.use('/api/admin/dashboard', adminGuard, adminRouter);
+app.use('/api/admin/resultados', adminGuard, resultadosRouter);
+app.use('/api/admin/constancias', adminGuard, constanciaRouter);
+app.use('/api/admin/reportes', adminGuard, reportesRouter);
+
+// Juez Routes (Protegidas solo para JUEZ)
+app.use('/api/juez', juezGuard, juezRouter);
+
+// Participante Routes (Protegidas solo para PARTICIPANTE)
+app.use('/api/participante/avances', participanteGuard, avanceRouter);
+app.use('/api/participante/invitaciones', participanteGuard, invitacionRouter);
+app.use('/api/participante/resultados', participanteGuard, resultadosRouter);
+app.use('/api/participante', participanteGuard, participanteDashboardRouter);
 
 // Swagger Documentation Route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

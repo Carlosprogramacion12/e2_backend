@@ -59,5 +59,13 @@ export class AvanceRepository {
       }
     });
   }
+
+  async getEventoByProyectoId(proyectoId: number) {
+    const proyecto = await prisma.proyectos.findUnique({
+      where: { id: BigInt(proyectoId) },
+      include: { eventos: true }
+    });
+    return proyecto?.eventos;
+  }
 }
 

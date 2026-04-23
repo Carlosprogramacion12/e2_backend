@@ -1,8 +1,17 @@
 import { Application, Request, Response, NextFunction } from 'express';
+import { AppError } from '../errors';
 
 export const errorMiddleware = (err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('[Error]:', err);
-  const status = err.status || 500;
+
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+
+  const status = err.status || err.statusCode || 500;
   const message = err.message || 'Error interno del servidor';
 
   // Return validation error format for Zod

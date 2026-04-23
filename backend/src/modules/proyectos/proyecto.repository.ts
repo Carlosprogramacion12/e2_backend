@@ -1,5 +1,7 @@
 import prisma from '../../../prisma.config';
 import { CreateProyectoDto, UpdateProyectoDto, ProyectoQueryOptions } from './proyecto.types';
+import { AppError } from '../../errors';
+
 
 export class ProyectoRepository {
   async findAllPaginated(options: ProyectoQueryOptions) {
@@ -55,7 +57,7 @@ export class ProyectoRepository {
     });
 
     if (existing) {
-      throw { status: 400, message: 'Este equipo ya tiene un proyecto registrado en este evento.' };
+      throw new AppError(400, 'Este equipo ya tiene un proyecto registrado en este evento.');
     }
 
     const proyecto = await prisma.proyectos.create({

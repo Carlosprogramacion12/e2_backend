@@ -1,5 +1,7 @@
 import prisma from '../../../prisma.config';
 import { RankingService } from './ranking.service';
+import { AppError } from '../../errors';
+
 
 const rankingService = new RankingService();
 
@@ -125,7 +127,7 @@ export class ResultadosService {
       }
     });
 
-    if (!proyecto) throw { status: 404, message: 'Proyecto no encontrado' };
+    if (!proyecto) throw new AppError(404, 'Proyecto no encontrado');
 
     const textoLogro = rankingService.getTextoLogro(posicion);
 

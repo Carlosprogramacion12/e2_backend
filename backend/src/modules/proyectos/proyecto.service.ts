@@ -1,11 +1,15 @@
 import { ProyectoRepository } from './proyecto.repository';
 import { CreateProyectoDto, UpdateProyectoDto, ProyectoQueryOptions } from './proyecto.types';
+import { AppError } from '../../errors';
 
-const proyectoRepository = new ProyectoRepository();
+
+
 
 export class ProyectoService {
+  constructor(private readonly proyectoRepository: ProyectoRepository = new ProyectoRepository()) {}
+
   async getAllProyectos(options: ProyectoQueryOptions) {
-    const { count, rows } = await proyectoRepository.findAllPaginated(options);
+    const { count, rows } = await this.proyectoRepository.findAllPaginated(options);
     const limit = options.limit || 10;
     const page = options.page || 1;
 
@@ -37,9 +41,9 @@ export class ProyectoService {
   }
 
   async getProyectoById(id: number) {
-    const proyecto = await proyectoRepository.findById(id);
+    const proyecto = await this.proyectoRepository.findById(id);
     if (!proyecto) {
-      throw { status: 404, message: 'Proyecto no encontrado' };
+      throw new AppError(404, 'Proyecto no encontrado');
     }
 
     const formatProyecto = {
@@ -91,7 +95,7 @@ export class ProyectoService {
   }
 
   async createProyecto(data: CreateProyectoDto) {
-    const proyecto = await proyectoRepository.create(data);
+    const proyecto = await this.proyectoRepository.create(data);
     return {
       success: true,
       message: 'Proyecto creado.',
@@ -105,22 +109,22 @@ export class ProyectoService {
   }
 
   async updateProyecto(id: number, data: UpdateProyectoDto) {
-    const proyecto = await proyectoRepository.findById(id);
+    const proyecto = await this.proyectoRepository.findById(id);
     if (!proyecto) {
-      throw { status: 404, message: 'Proyecto no encontrado' };
+      throw new AppError(404, 'Proyecto no encontrado');
     }
 
-    await proyectoRepository.update(id, data);
+    await this.proyectoRepository.update(id, data);
     return { success: true, message: 'Proyecto actualizado.' };
   }
 
   async deleteProyecto(id: number) {
-    const proyecto = await proyectoRepository.findById(id);
+    const proyecto = await this.proyectoRepository.findById(id);
     if (!proyecto) {
-      throw { status: 404, message: 'Proyecto no encontrado' };
+      throw new AppError(404, 'Proyecto no encontrado');
     }
 
-    await proyectoRepository.delete(id);
+    await this.proyectoRepository.delete(id);
     return { success: true, message: 'Proyecto eliminado.' };
   }
 }

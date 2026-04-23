@@ -1,11 +1,15 @@
 import { InvitacionRepository } from './invitacion.repository';
 import { CrearInvitacionDto } from './invitacion.types';
+import { AppError } from '../../errors';
 
-const invitacionRepository = new InvitacionRepository();
+
+
 
 export class InvitacionService {
+  constructor(private readonly invitacionRepository: InvitacionRepository = new InvitacionRepository()) {}
+
   async getMisInvitaciones(userId: number) {
-    const invs = await invitacionRepository.getMisInvitaciones(userId);
+    const invs = await this.invitacionRepository.getMisInvitaciones(userId);
     return {
       success: true,
       data: invs.map((i: any) => ({
@@ -25,7 +29,7 @@ export class InvitacionService {
   }
 
   async getInvitacionesEnviadas(equipoId: number) {
-    const invs = await invitacionRepository.getInvitacionesEnviadas(equipoId);
+    const invs = await this.invitacionRepository.getInvitacionesEnviadas(equipoId);
     return {
       success: true,
       data: invs.map((i: any) => ({
@@ -47,7 +51,7 @@ export class InvitacionService {
   }
 
   async enviarInvitacion(equipoId: number, userId: number, dto: CrearInvitacionDto) {
-    const inv = await invitacionRepository.crear(equipoId, dto);
+    const inv = await this.invitacionRepository.crear(equipoId, dto);
     return {
       success: true,
       message: 'Invitación enviada.',
@@ -60,10 +64,10 @@ export class InvitacionService {
   }
 
   async aceptar(invitacionId: number) {
-    const inv = await invitacionRepository.findById(invitacionId);
-    if (!inv || inv.estado !== 'PENDIENTE') throw { status: 400, message: 'Invitación no válida.' };
+    const inv = await this.invitacionRepository.findById(invitacionId);
+    if (!inv || inv.estado !== 'PENDIENTE') throw new AppError(400, 'Invitación no válida.');
 
-    await invitacionRepository.aceptar(
+    await this.invitacionRepository.aceptar(
       invitacionId,
       Number(inv.equipo_id),
       Number(inv.user_id)
@@ -73,10 +77,10 @@ export class InvitacionService {
   }
 
   async rechazar(invitacionId: number) {
-    const inv = await invitacionRepository.findById(invitacionId);
-    if (!inv) throw { status: 404, message: 'Invitación no encontrada.' };
+    const inv = await this.invitacionRepository.findById(invitacionId);
+    if (!inv) throw new AppError(404, 'Invitación no encontrada.');
 
-    await invitacionRepository.rechazar(invitacionId);
+    await this.invitacionRepository.rechazar(invitacionId);
     return { success: true, message: 'Invitación rechazada.' };
   }
 }

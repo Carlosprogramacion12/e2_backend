@@ -4,8 +4,10 @@ import { AuthRepository } from './auth.repository';
 import { LoginDto, RegisterDto, AuthResponse } from './auth.types';
 import { config } from '../../config';
 import prisma from '../../../prisma.config';
+import { AppError } from '../../errors';
 
-const authRepository = new AuthRepository();
+
+
 
 // Get user roles from the users.role enum field OR legacy junction tables
 async function getUserRoles(user: any): Promise<string[]> {
@@ -49,20 +51,22 @@ function getDashboardRoute(roles: string[]): string {
 }
 
 export class AuthService {
+  constructor(private readonly authRepository: AuthRepository = new AuthRepository()) {}
+
   async register(data: RegisterDto): Promise<AuthResponse> {
-    const existingUser = await authRepository.findUserByEmail(data.email);
+    const existingUser = await this.authRepository.findUserByEmail(data.email);
     if (existingUser) {
-      throw { status: 400, message: 'El email ya está registrado' };
+      throw new AppError(400, 'El email ya está registrado');
     }
 
     const existingName = await prisma.users.findFirst({ where: { name: data.name } });
     if (existingName) {
-      throw { status: 400, message: 'El nombre ya está en uso' };
+      throw new AppError(400, 'El nombre ya está en uso');
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
-    const user = await authRepository.createUser({
+    const user = await this.authRepository.createUser({
       name: data.name,
       email: data.email,
       password: hashedPassword,
@@ -96,14 +100,14 @@ export class AuthService {
   }
 
   async login(data: LoginDto): Promise<AuthResponse> {
-    const user = await authRepository.findUserByEmail(data.email);
+    const user = await this.authRepository.findUserByEmail(data.email);
     if (!user) {
-      throw { status: 401, message: 'Credenciales inválidas' };
+      throw new AppError(401, 'Credenciales inválidas');
     }
 
     const isValidPassword = await bcrypt.compare(data.password, user.password);
     if (!isValidPassword) {
-      throw { status: 401, message: 'Credenciales inválidas' };
+      throw new AppError(401, 'Credenciales inválidas');
     }
 
     const token = jwt.sign({ id: Number(user.id) }, config.jwtSecret as jwt.Secret, { expiresIn: config.jwtExpiresIn as any });
@@ -130,9 +134,9 @@ export class AuthService {
   }
 
   async getMe(userId: number) {
-    const user = await authRepository.findUserById(userId);
+    const user = await this.authRepository.findUserById(userId);
     if (!user) {
-      throw { status: 404, message: 'Usuario no encontrado' };
+      throw new AppError(404, 'Usuario no encontrado');
     }
 
     const roles = await getUserRoles(user);
@@ -153,23 +157,23 @@ export class AuthService {
   }
 
   async updateProfile(userId: number, data: { name: string; email: string }) {
-    const user = await authRepository.findUserById(userId);
+    const user = await this.authRepository.findUserById(userId);
     if (!user) {
-      throw { status: 404, message: 'Usuario no encontrado' };
+      throw new AppError(404, 'Usuario no encontrado');
     }
 
     // Uniqueness checks
     if (data.email && data.email !== user.email) {
-      const existing = await authRepository.findUserByEmail(data.email);
+      const existing = await this.authRepository.findUserByEmail(data.email);
       if (existing && Number(existing.id) !== userId) {
-        throw { status: 400, message: 'El email ya está en uso por otro usuario' };
+        throw new AppError(400, 'El email ya está en uso por otro usuario');
       }
     }
 
     if (data.name && data.name !== user.name) {
       const existingName = await prisma.users.findFirst({ where: { name: data.name } });
       if (existingName && Number(existingName.id) !== userId) {
-        throw { status: 400, message: 'El nombre ya está en uso por otro usuario' };
+        throw new AppError(400, 'El nombre ya está en uso por otro usuario');
       }
     }
 
@@ -177,7 +181,7 @@ export class AuthService {
     if (telefono && telefono !== user.telefono) {
       const existingPhone = await prisma.users.findFirst({ where: { telefono } });
       if (existingPhone && Number(existingPhone.id) !== userId) {
-        throw { status: 400, message: 'El número de teléfono ya está en uso por otro usuario' };
+        throw new AppError(400, 'El número de teléfono ya está en uso por otro usuario');
       }
     }
 
@@ -185,7 +189,7 @@ export class AuthService {
     if (no_control && no_control !== user.no_control) {
       const existingControl = await prisma.users.findFirst({ where: { no_control } });
       if (existingControl && Number(existingControl.id) !== userId) {
-        throw { status: 400, message: 'El número de control ya está en uso por otro usuario' };
+        throw new AppError(400, 'El número de control ya está en uso por otro usuario');
       }
     }
 
@@ -216,24 +220,24 @@ export class AuthService {
   }
 
   async updatePassword(userId: number, data: { current_password: string; password: string; password_confirmation: string }) {
-    const user = await authRepository.findUserById(userId);
+    const user = await this.authRepository.findUserById(userId);
     if (!user) {
-      throw { status: 404, message: 'Usuario no encontrado' };
+      throw new AppError(404, 'Usuario no encontrado');
     }
 
     // Validate current password
     const isValid = await bcrypt.compare(data.current_password, user.password);
     if (!isValid) {
-      throw { status: 400, message: 'La contraseña actual es incorrecta' };
+      throw new AppError(400, 'La contraseña actual es incorrecta');
     }
 
     // Validate confirmation
     if (data.password !== data.password_confirmation) {
-      throw { status: 400, message: 'Las contraseñas no coinciden' };
+      throw new AppError(400, 'Las contraseñas no coinciden');
     }
 
     if (data.password.length < 8) {
-      throw { status: 400, message: 'La contraseña debe tener al menos 8 caracteres' };
+      throw new AppError(400, 'La contraseña debe tener al menos 8 caracteres');
     }
 
     const hashed = await bcrypt.hash(data.password, 12);

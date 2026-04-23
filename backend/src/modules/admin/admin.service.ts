@@ -1,11 +1,13 @@
 import { AdminRepository } from './admin.repository';
 import { SaveDashboardPreferencesDto } from './admin.types';
 
-const adminRepository = new AdminRepository();
+
 
 export class AdminService {
+  constructor(private readonly adminRepository: AdminRepository = new AdminRepository()) {}
+
   async getDashboardData(userId: number) {
-    const metrics = await adminRepository.getDashboardMetrics();
+    const metrics = await this.adminRepository.getDashboardMetrics();
 
     // Widget preferences default configuration
     const defaultWidgets = [
@@ -21,7 +23,7 @@ export class AdminService {
     ];
 
     // Get user prefs (array of widget overrides)
-    const userPrefs = await adminRepository.getUserPreferences(userId);
+    const userPrefs = await this.adminRepository.getUserPreferences(userId);
     const prefsMap: Record<string, any> = {};
     
     if (Array.isArray(userPrefs)) {
@@ -60,7 +62,7 @@ export class AdminService {
   }
 
   async savePreferences(userId: number, data: SaveDashboardPreferencesDto) {
-    await adminRepository.saveUserPreferences(userId, data);
+    await this.adminRepository.saveUserPreferences(userId, data);
     return { success: true, message: 'Preferencias guardadas correctamente.' };
   }
 }

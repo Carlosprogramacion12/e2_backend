@@ -1,16 +1,20 @@
 import { EquipoRepository } from './equipo.repository';
 import { UpdateEquipoDto, AddMiembroDto, EquipoQueryOptions } from './equipo.types';
 import prisma from '../../../prisma.config';
+import { AppError } from '../../errors';
 
-const equipoRepository = new EquipoRepository();
+
+
 
 const ROL_MAP: Record<string, string> = {
   'LIDER': 'Líder', 'PROGRAMADOR': 'Programador', 'DISENADOR': 'Diseñador', 'TESTER': 'Tester'
 };
 
 export class EquipoService {
+  constructor(private readonly equipoRepository: EquipoRepository = new EquipoRepository()) {}
+
   async getAllEquipos(options: EquipoQueryOptions) {
-    const { count, rows } = await equipoRepository.findAllPaginated(options);
+    const { count, rows } = await this.equipoRepository.findAllPaginated(options);
     const limit = options.limit || 10;
     const page = options.page || 1;
 
@@ -68,14 +72,14 @@ export class EquipoService {
   }
 
   async createEquipo(data: any) {
-    const eq = await equipoRepository.create(data);
+    const eq = await this.equipoRepository.create(data);
     return { success: true, data: { ...eq, id: Number(eq.id), equipo: { id: Number(eq.id) } }, message: 'Equipo creado.' };
   }
 
   async getEquipoById(id: number) {
-    const equipo = await equipoRepository.findById(id);
+    const equipo = await this.equipoRepository.findById(id);
     if (!equipo) {
-      throw { status: 404, message: 'Equipo no encontrado' };
+      throw new AppError(404, 'Equipo no encontrado');
     }
 
     const formatEquipo = {
@@ -123,28 +127,28 @@ export class EquipoService {
   }
 
   async updateEquipo(id: number, data: UpdateEquipoDto) {
-    const equipo = await equipoRepository.findById(id);
-    if (!equipo) throw { status: 404, message: 'Equipo no encontrado' };
+    const equipo = await this.equipoRepository.findById(id);
+    if (!equipo) throw new AppError(404, 'Equipo no encontrado');
 
-    await equipoRepository.update(id, data);
+    await this.equipoRepository.update(id, data);
     return { success: true, message: 'Equipo actualizado.' };
   }
 
   async deleteEquipo(id: number) {
-    const equipo = await equipoRepository.findById(id);
-    if (!equipo) throw { status: 404, message: 'Equipo no encontrado' };
+    const equipo = await this.equipoRepository.findById(id);
+    if (!equipo) throw new AppError(404, 'Equipo no encontrado');
 
-    await equipoRepository.delete(id);
+    await this.equipoRepository.delete(id);
     return { success: true, message: 'Equipo eliminado.' };
   }
 
   async addMember(equipoId: number, data: AddMiembroDto) {
-    const equipo = await equipoRepository.findById(equipoId);
-    if (!equipo) throw { status: 404, message: 'Equipo no encontrado' };
+    const equipo = await this.equipoRepository.findById(equipoId);
+    if (!equipo) throw new AppError(404, 'Equipo no encontrado');
 
     // 0. Check capacity limit (Max 5 members)
     if (equipo.equipo_miembros.length >= 5) {
-      throw { status: 400, message: 'El equipo ya ha alcanzado el límite máximo de 5 integrantes.' };
+      throw new AppError(400, 'El equipo ya ha alcanzado el límite máximo de 5 integrantes.');
     }
 
     // 1. Check if user is already in THIS team
@@ -152,12 +156,12 @@ export class EquipoService {
       (em: any) => Number(em.user_id) === data.participante_id
     );
     if (isAlreadyMember) {
-      throw { status: 400, message: 'El participante ya es miembro de este equipo.' };
+      throw new AppError(400, 'El participante ya es miembro de este equipo.');
     }
 
     // 2. Check if team is full (Max 5 members)
     if (equipo.equipo_miembros.length >= 5) {
-      throw { status: 400, message: 'El equipo ya ha alcanzado el límite máximo de 5 integrantes.' };
+      throw new AppError(400, 'El equipo ya ha alcanzado el límite máximo de 5 integrantes.');
     }
 
     // 2. Check if user is already in ANOTHER team for the SAME event
@@ -174,7 +178,7 @@ export class EquipoService {
       `;
 
       if (conflicts.length > 0) {
-        throw { status: 400, message: 'El participante ya pertenece a otro equipo en este mismo evento. No se puede agregar hasta que finalice el evento.' };
+        throw new AppError(400, 'El participante ya pertenece a otro equipo en este mismo evento. No se puede agregar hasta que finalice el evento.');
       }
     }
 
@@ -182,10 +186,10 @@ export class EquipoService {
     const perfiles: any[] = await prisma.$queryRaw`SELECT nombre FROM perfiles WHERE id = ${data.perfil_id} LIMIT 1`;
     const perfilNombre = perfiles.length > 0 ? perfiles[0].nombre.toUpperCase() : '';
     if (perfilNombre.includes('LIDER') || perfilNombre.includes('LÍDER')) {
-      throw { status: 400, message: 'No se puede agregar un nuevo Líder. El líder es asignado automáticamente al crear el equipo.' };
+      throw new AppError(400, 'No se puede agregar un nuevo Líder. El líder es asignado automáticamente al crear el equipo.');
     }
 
-    await equipoRepository.addMiembro(equipoId, data);
+    await this.equipoRepository.addMiembro(equipoId, data);
     return { success: true, message: 'Miembro agregado al equipo.' };
   }
 
@@ -197,7 +201,7 @@ export class EquipoService {
       where: { equipo_id: BigInt(equipoId), user_id: BigInt(userId) }
     });
 
-    if (!membership) throw { status: 404, message: 'Miembro no encontrado en este equipo.' };
+    if (!membership) throw new AppError(404, 'Miembro no encontrado en este equipo.');
 
     const isLider = membership.rol === 'LIDER';
 

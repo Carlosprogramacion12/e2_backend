@@ -1,2 +1,11 @@
-
+# General
+node_modules/
+.env
+*.log
 .vscode/
+
+# Build outputs
+dist/
+
+# Backend
+backend/src/generated/prisma

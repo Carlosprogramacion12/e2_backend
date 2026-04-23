@@ -1,10 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { ProyectoService } from './proyecto.service';
+import { ProyectoRepository } from './proyecto.repository';
 import { createProyectoSchema, updateProyectoSchema } from './proyecto.schema';
 import { authMiddleware, AuthRequest } from '../../middlewares/auth.middleware';
 
 const router = Router();
-const proyectoService = new ProyectoService();
+const proyectoService = new ProyectoService(new ProyectoRepository());
 
 const validate = (schema: any) => (req: Request, res: Response, next: NextFunction) => {
   try {

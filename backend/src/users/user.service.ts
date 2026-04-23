@@ -1,8 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { UserRepository } from './user.repository';
 import { CreateUserDto, UpdateUserDto, UserQueryOptions } from './user.types';
+import { AppError } from '../errors';
 
-const userRepository = new UserRepository();
+
+
 
 // Available roles for the frontend dropdown
 const AVAILABLE_ROLES = [
@@ -20,8 +22,10 @@ const ROLE_NAME_MAP: Record<string, string> = {
 };
 
 export class UserService {
+  constructor(private readonly userRepository: UserRepository = new UserRepository()) {}
+
   async getAllUsers(options: UserQueryOptions) {
-    const { count, rows } = await userRepository.findAllPaginated(options);
+    const { count, rows } = await this.userRepository.findAllPaginated(options);
     const limit = options.limit || 10;
     const page = options.page || 1;
 
@@ -68,30 +72,30 @@ export class UserService {
   }
 
   async createUser(data: CreateUserDto) {
-    const existing = await userRepository.findByEmail(data.email);
+    const existing = await this.userRepository.findByEmail(data.email);
     if (existing) {
-      throw { status: 400, message: 'El email ya está registrado' };
+      throw new AppError(400, 'El email ya está registrado');
     }
 
     if (data.nombre) {
-      const existingName = await userRepository.findByName(data.nombre);
-      if (existingName) throw { status: 400, message: 'El nombre de usuario ya está registrado' };
+      const existingName = await this.userRepository.findByName(data.nombre);
+      if (existingName) throw new AppError(400, 'El nombre de usuario ya está registrado');
     }
 
     if (data.telefono) {
-      const existingPhone = await userRepository.findByPhone(data.telefono);
-      if (existingPhone) throw { status: 400, message: 'El número de teléfono ya está registrado' };
+      const existingPhone = await this.userRepository.findByPhone(data.telefono);
+      if (existingPhone) throw new AppError(400, 'El número de teléfono ya está registrado');
     }
 
     if (data.no_control) {
-      const existingControl = await userRepository.findByControlNumber(data.no_control);
-      if (existingControl) throw { status: 400, message: 'El número de control ya está registrado' };
+      const existingControl = await this.userRepository.findByControlNumber(data.no_control);
+      if (existingControl) throw new AppError(400, 'El número de control ya está registrado');
     }
 
     const hashedPassword = await bcrypt.hash(data.password!, 12);
     const role = ROLE_ID_MAP[data.rol_id] || 'PARTICIPANTE';
     
-    await userRepository.create({
+    await this.userRepository.create({
       ...data,
       password: hashedPassword,
       role
@@ -101,9 +105,9 @@ export class UserService {
   }
 
   async getUserById(id: number) {
-    const user = await userRepository.findById(id);
+    const user = await this.userRepository.findById(id);
     if (!user) {
-      throw { status: 404, message: 'Usuario no encontrado' };
+      throw new AppError(404, 'Usuario no encontrado');
     }
 
     return {
@@ -125,28 +129,28 @@ export class UserService {
   }
 
   async updateUser(id: number, data: UpdateUserDto, requesterId?: number) {
-    const user = await userRepository.findById(id);
-    if (!user) throw { status: 404, message: 'Usuario no encontrado' };
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new AppError(404, 'Usuario no encontrado');
 
     // Uniqueness checks
     if (data.email && data.email !== user.email) {
-      const existing = await userRepository.findByEmail(data.email);
-      if (existing) throw { status: 400, message: 'El email ya está en uso' };
+      const existing = await this.userRepository.findByEmail(data.email);
+      if (existing) throw new AppError(400, 'El email ya está en uso');
     }
 
     if (data.nombre && data.nombre !== user.name) {
-      const existing = await userRepository.findByName(data.nombre);
-      if (existing) throw { status: 400, message: 'El nombre ya está en uso' };
+      const existing = await this.userRepository.findByName(data.nombre);
+      if (existing) throw new AppError(400, 'El nombre ya está en uso');
     }
 
     if (data.telefono && data.telefono !== user.telefono) {
-      const existing = await userRepository.findByPhone(data.telefono);
-      if (existing) throw { status: 400, message: 'El teléfono ya está en uso' };
+      const existing = await this.userRepository.findByPhone(data.telefono);
+      if (existing) throw new AppError(400, 'El teléfono ya está en uso');
     }
 
     if (data.no_control && data.no_control !== user.no_control) {
-      const existing = await userRepository.findByControlNumber(data.no_control);
-      if (existing) throw { status: 400, message: 'El número de control ya está en uso' };
+      const existing = await this.userRepository.findByControlNumber(data.no_control);
+      if (existing) throw new AppError(400, 'El número de control ya está en uso');
     }
 
     let hashedPassword = data.password;
@@ -154,7 +158,7 @@ export class UserService {
       hashedPassword = await bcrypt.hash(hashedPassword, 12);
     }
 
-    await userRepository.update(id, {
+    await this.userRepository.update(id, {
       nombre: data.nombre,
       email: data.email,
       password: hashedPassword,
@@ -169,7 +173,7 @@ export class UserService {
         // We skip role update for self, but update other fields
       } else {
         const role = ROLE_ID_MAP[data.rol_id] || 'PARTICIPANTE';
-        await userRepository.setRole(id, role);
+        await this.userRepository.setRole(id, role);
       }
     }
 
@@ -178,13 +182,13 @@ export class UserService {
 
   async deleteUser(id: number, requestUserId: number) {
     if (id === requestUserId) {
-      throw { status: 400, message: 'No puedes eliminar tu propia cuenta.' };
+      throw new AppError(400, 'No puedes eliminar tu propia cuenta.');
     }
 
-    const user = await userRepository.findById(id);
-    if (!user) throw { status: 404, message: 'Usuario no encontrado' };
+    const user = await this.userRepository.findById(id);
+    if (!user) throw new AppError(404, 'Usuario no encontrado');
 
-    await userRepository.delete(id);
+    await this.userRepository.delete(id);
     return { success: true, message: 'Usuario eliminado del sistema.' };
   }
 }

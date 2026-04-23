@@ -13,8 +13,8 @@ const avatarStorage = multer.diskStorage({
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
-  filename: (req: any, file, cb) => {
-    const userId = req.user?.id || 'unknown';
+  filename: (req: Request, file, cb) => {
+    const userId = (req as AuthRequest).user?.id || 'unknown';
     const ext = path.extname(file.originalname) || '.jpg';
     cb(null, `${userId}${ext}`);
   }

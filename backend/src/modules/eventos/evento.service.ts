@@ -1,11 +1,15 @@
 import { EventoRepository } from './evento.repository';
 import { CreateEventoDto, UpdateEventoDto, EventoQueryOptions } from './evento.types';
+import { AppError } from '../../errors';
 
-const eventoRepository = new EventoRepository();
+
+
 
 export class EventoService {
+  constructor(private readonly eventoRepository: EventoRepository = new EventoRepository()) {}
+
   async getAllEventos(options: EventoQueryOptions) {
-    const { count, rows } = await eventoRepository.findAllPaginated(options);
+    const { count, rows } = await this.eventoRepository.findAllPaginated(options);
     const limit = options.limit || 10;
     const page = options.page || 1;
 
@@ -27,9 +31,9 @@ export class EventoService {
   }
 
   async getEventoById(id: number) {
-    const evento = await eventoRepository.findById(id);
+    const evento = await this.eventoRepository.findById(id);
     if (!evento) {
-      throw { status: 404, message: 'Evento no encontrado' };
+      throw new AppError(404, 'Evento no encontrado');
     }
 
     const jueces_asignados = evento.evento_jueces.length;
@@ -73,14 +77,14 @@ export class EventoService {
     hoy.setHours(0, 0, 0, 0);
 
     if (inicio < hoy) {
-      throw { status: 400, message: 'La fecha de inicio no puede ser anterior a hoy.' };
+      throw new AppError(400, 'La fecha de inicio no puede ser anterior a hoy.');
     }
 
     if (fin <= inicio) {
-      throw { status: 400, message: 'La fecha de finalización debe ser posterior a la fecha de inicio.' };
+      throw new AppError(400, 'La fecha de finalización debe ser posterior a la fecha de inicio.');
     }
 
-    const evento = await eventoRepository.create({
+    const evento = await this.eventoRepository.create({
       nombre: data.nombre,
       descripcion: data.descripcion,
       fecha_inicio: data.fecha_inicio,
@@ -101,10 +105,10 @@ export class EventoService {
 
       if (conflicts.length > 0) {
         const names = conflicts.map(c => c.name).join(', ');
-        throw { status: 400, message: `No se pueden asignar como jueces a los siguientes participantes de este evento: ${names}` };
+        throw new AppError(400, `No se pueden asignar como jueces a los siguientes participantes de este evento: ${names}`);
       }
 
-      await eventoRepository.setJueces(Number(evento.id), data.jueces);
+      await this.eventoRepository.setJueces(Number(evento.id), data.jueces);
     }
 
     return {
@@ -115,23 +119,23 @@ export class EventoService {
   }
 
   async updateEvento(id: number, data: UpdateEventoDto) {
-    const evento = await eventoRepository.findById(id);
+    const evento = await this.eventoRepository.findById(id);
     if (!evento) {
-      throw { status: 404, message: 'Evento no encontrado' };
+      throw new AppError(404, 'Evento no encontrado');
     }
 
     if (new Date() >= new Date(evento.fecha_inicio)) {
-      throw { status: 400, message: 'No se puede editar un evento que ya ha comenzado o finalizado.' };
+      throw new AppError(400, 'No se puede editar un evento que ya ha comenzado o finalizado.');
     }
 
     const nuevaFechaInicio = data.fecha_inicio ? new Date(data.fecha_inicio) : new Date(evento.fecha_inicio);
     const nuevaFechaFin = data.fecha_fin ? new Date(data.fecha_fin) : new Date(evento.fecha_fin);
 
     if (nuevaFechaFin <= nuevaFechaInicio) {
-      throw { status: 400, message: 'La fecha de finalización debe ser posterior a la fecha de inicio.' };
+      throw new AppError(400, 'La fecha de finalización debe ser posterior a la fecha de inicio.');
     }
 
-    await eventoRepository.update(id, data);
+    await this.eventoRepository.update(id, data);
 
     if (data.jueces) {
       const prisma = (await import('../../../prisma.config')).default;
@@ -146,31 +150,31 @@ export class EventoService {
 
       if (conflicts.length > 0) {
         const names = conflicts.map(c => c.name).join(', ');
-        throw { status: 400, message: `No se pueden asignar como jueces a los siguientes participantes de este evento: ${names}` };
+        throw new AppError(400, `No se pueden asignar como jueces a los siguientes participantes de este evento: ${names}`);
       }
 
-      await eventoRepository.setJueces(id, data.jueces);
+      await this.eventoRepository.setJueces(id, data.jueces);
     }
 
     return { success: true, message: 'Evento actualizado exitosamente.' };
   }
 
   async deleteEvento(id: number) {
-    const evento = await eventoRepository.findById(id);
+    const evento = await this.eventoRepository.findById(id);
     if (!evento) {
-      throw { status: 404, message: 'Evento no encontrado' };
+      throw new AppError(404, 'Evento no encontrado');
     }
 
     if (new Date() >= new Date(evento.fecha_inicio)) {
-      throw { status: 400, message: 'No se puede eliminar un evento que ya ha comenzado.' };
+      throw new AppError(400, 'No se puede eliminar un evento que ya ha comenzado.');
     }
 
-    await eventoRepository.delete(id);
+    await this.eventoRepository.delete(id);
     return { success: true, message: 'Evento eliminado exitosamente.' };
   }
 
   async getAvailableJueces() {
-    const jueces = await eventoRepository.getAvailableJueces();
+    const jueces = await this.eventoRepository.getAvailableJueces();
     return {
       success: true,
       data: jueces.map((j) => ({
@@ -183,20 +187,20 @@ export class EventoService {
 
   async addJuezToEvento(eventoId: number, userId: number) {
     // 1. Check if event exists
-    const evento = await eventoRepository.findById(eventoId);
-    if (!evento) throw { status: 404, message: 'Evento no encontrado' };
+    const evento = await this.eventoRepository.findById(eventoId);
+    if (!evento) throw new AppError(404, 'Evento no encontrado');
 
     const now = new Date();
     if (now > new Date(evento.fecha_fin)) {
-        throw { status: 400, message: 'No se pueden asignar jueces a un evento que ya ha finalizado.' };
+        throw new AppError(400, 'No se pueden asignar jueces a un evento que ya ha finalizado.');
     }
     if (now >= new Date(evento.fecha_inicio)) {
-        throw { status: 400, message: 'No se pueden asignar jueces una vez que el evento ha comenzado.' };
+        throw new AppError(400, 'No se pueden asignar jueces una vez que el evento ha comenzado.');
     }
 
     // 2. Check if user is already assigned
     const alreadyAssigned = evento.evento_jueces.some(ej => Number(ej.user_id) === userId);
-    if (alreadyAssigned) throw { status: 400, message: 'El juez ya está asignado a este evento' };
+    if (alreadyAssigned) throw new AppError(400, 'El juez ya está asignado a este evento');
 
     // 3. Conflict check: User must not be a participant in this event
     const prisma = (await import('../../../prisma.config')).default;
@@ -210,30 +214,30 @@ export class EventoService {
     `;
 
     if (conflicts.length > 0) {
-      throw { status: 400, message: `No se puede asignar como juez a ${conflicts[0].name} porque ya es participante en este evento.` };
+      throw new AppError(400, `No se puede asignar como juez a ${conflicts[0].name} porque ya es participante en este evento.`);
     }
 
-    await eventoRepository.addJuez(eventoId, userId);
+    await this.eventoRepository.addJuez(eventoId, userId);
     return { success: true, message: 'Juez asignado correctamente' };
   }
 
   async removeJuezFromEvento(eventoId: number, userId: number) {
     try {
-      const evento = await eventoRepository.findById(eventoId);
+      const evento = await this.eventoRepository.findById(eventoId);
       const now = new Date();
       if (evento) {
           if (now > new Date(evento.fecha_fin)) {
-              throw { status: 400, message: 'No se pueden remover jueces de un evento que ya ha finalizado.' };
+              throw new AppError(400, 'No se pueden remover jueces de un evento que ya ha finalizado.');
           }
           if (now >= new Date(evento.fecha_inicio)) {
-              throw { status: 400, message: 'No se pueden remover jueces una vez que el evento ha comenzado.' };
+              throw new AppError(400, 'No se pueden remover jueces una vez que el evento ha comenzado.');
           }
       }
-      await eventoRepository.removeJuez(eventoId, userId);
+      await this.eventoRepository.removeJuez(eventoId, userId);
       return { success: true, message: 'Juez removido correctamente' };
     } catch (error: any) {
       if (error.status) throw error;
-      throw { status: 400, message: 'El juez no está asignado a este evento o no se pudo remover' };
+      throw new AppError(400, 'El juez no está asignado a este evento o no se pudo remover');
     }
   }
 }

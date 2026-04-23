@@ -1,13 +1,17 @@
 import { ConstanciaRepository } from './constancias.repository';
 import { RankingService } from '../resultados/ranking.service';
 import prisma from '../../../prisma.config';
+import { AppError } from '../../errors';
 
-const constanciaRepository = new ConstanciaRepository();
+
+
 const rankingService = new RankingService();
 
 export class ConstanciaService {
+  constructor(private readonly constanciaRepository: ConstanciaRepository = new ConstanciaRepository()) {}
+
   async getAllConstancias() {
-    const constancias = await constanciaRepository.findAll();
+    const constancias = await this.constanciaRepository.findAll();
     return {
       success: true,
       data: constancias.map((c: any) => ({
@@ -23,8 +27,8 @@ export class ConstanciaService {
   }
 
   async getConstanciaById(id: number) {
-    const c = await constanciaRepository.findById(id);
-    if (!c) throw { status: 404, message: 'Constancia no encontrada' };
+    const c = await this.constanciaRepository.findById(id);
+    if (!c) throw new AppError(404, 'Constancia no encontrada');
     
     return {
       success: true,
@@ -42,7 +46,7 @@ export class ConstanciaService {
 
   async getConstanciasByUser(userId: number, eventoId?: number) {
     // 1. Buscar constancias registradas físicamente
-    const constanciasDB = await constanciaRepository.findByUser(userId, eventoId);
+    const constanciasDB = await this.constanciaRepository.findByUser(userId, eventoId);
     
     // 2. Buscar participaciones dinámicas (fallback)
     // Si no hay constancias en la DB, buscamos todos los eventos FINALIZADOS donde participó

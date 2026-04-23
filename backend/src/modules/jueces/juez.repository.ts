@@ -1,5 +1,7 @@
 import prisma from '../../../prisma.config';
 import { StoreEvaluacionDto } from './juez.types';
+import { AppError } from '../../errors';
+
 
 export class JuezRepository {
   async getDashboardData(userId: number) {
@@ -145,7 +147,7 @@ export class JuezRepository {
       }
     });
 
-    if (!asignado) throw { status: 403, message: 'No tienes permiso para evaluar este proyecto.' };
+    if (!asignado) throw new AppError(403, 'No tienes permiso para evaluar este proyecto.');
 
     const comentarioEval = proyecto.evaluaciones.find((e: any) => e.comentario);
 
@@ -185,22 +187,16 @@ export class JuezRepository {
       where: { id: BigInt(proyectoId) },
       include: { eventos: { include: { evaluacion_criterios: true } } }
     });
-    if (!proyecto) throw { status: 404, message: 'Proyecto no encontrado' };
+    if (!proyecto) throw new AppError(404, 'Proyecto no encontrado');
 
     // Verificar si el evento ha iniciado o finalizado
     const now = new Date();
     if (proyecto.eventos) {
       if (now < proyecto.eventos.fecha_inicio) {
-        throw { 
-          status: 403, 
-          message: 'El periodo de evaluación aún no ha comenzado. El evento inicia el ' + proyecto.eventos.fecha_inicio.toLocaleString() + '.' 
-        };
+        throw new AppError(403, 'El periodo de evaluación aún no ha comenzado. El evento inicia el ' + proyecto.eventos.fecha_inicio.toLocaleString() + '.');
       }
       if (now > proyecto.eventos.fecha_fin) {
-        throw { 
-          status: 403, 
-          message: 'El periodo de evaluación para este evento ha finalizado. Los cambios no se han guardado.' 
-        };
+        throw new AppError(403, 'El periodo de evaluación para este evento ha finalizado. Los cambios no se han guardado.');
       }
     }
 
@@ -221,17 +217,14 @@ export class JuezRepository {
       const now = new Date();
       
       const criterion = proyecto.eventos.evaluacion_criterios.find(c => Number(c.id) === criterioId);
-      if (!criterion) throw { status: 400, message: `Criterio ${criterioId} no válido para este evento.` };
+      if (!criterion) throw new AppError(400, `Criterio ${criterioId} no válido para este evento.`);
       
       const weight = Number(criterion.ponderacion);
       const inputScore = Number(puntuacion);
 
       // Now we allow 0-100 range for everything
       if (inputScore < 0 || inputScore > 100) {
-        throw { 
-          status: 400, 
-          message: `La puntuación para "${criterion.nombre}" (${inputScore}) debe estar entre 0 y 100.` 
-        };
+        throw new AppError(400, `La puntuación para "${criterion.nombre}" (${inputScore}) debe estar entre 0 y 100.`);
       }
 
       const existingEval = await prisma.evaluaciones.findFirst({
